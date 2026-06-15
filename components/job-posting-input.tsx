@@ -26,7 +26,8 @@ export default function JobPostingInput({
   onNeedApiKey,
   analysis,
 }: JobPostingInputProps) {
-  const [open, setOpen] = useState(false);
+  // 一番の機能なので、初期状態から開いて見せる
+  const [open, setOpen] = useState(true);
   const [tab, setTab] = useState<Tab>("text");
   const [url, setUrl] = useState("");
   const [urlStep, setUrlStep] = useState<UrlStep>("idle");
