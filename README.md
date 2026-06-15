@@ -4,7 +4,7 @@
 
 「自分には大した経験なんてない」——そう思っていても、応募先が求めることに沿ってプロのアドバイザーと話すと、実は評価される経験をたくさんしていた、ということがよくあります。ResuMate は、その“棚卸し対話”をAIが担い、職務経歴・自己PR・志望動機をぐっとリッチにします。
 
-![ResuMate 全体画面](docs/screenshots/01-overview.png)
+![ResuMate：求人を分析し、AIがキャリアアドバイザーのようにインタビュー](docs/screenshots/interview.png)
 
 ---
 
@@ -20,7 +20,9 @@
 2. **AIが会社を分析** — その企業が**求める人物像・求める経験**をAIが読み解き、参考になる**志望動機・自己PRのお手本**まで提示します。
 3. **AIインタビューを受ける** — **「AIにヒアリングを始めてもらう」**を押すと、分析結果に基づき、キャリアアドバイザーのようにAIが質問。答えていくだけで、**職務経歴・自己PR・志望動機**が書類に反映されていきます。
 
-![AIがヒアリング項目を用意してインタビュー](docs/screenshots/05-hearing.png)
+![「ヒアリングを始めてもらう」を押すとAIがインタビューを開始](docs/screenshots/interview-chat.png)
+
+*↑「AIにヒアリングを始めてもらう」を押すと、分析結果をふまえてAIがキャリアアドバイザーのように質問を開始します。答えていくだけで、職務経歴・自己PR・志望動機が書類に反映されていきます。*
 
 > 氏名・学歴などの“形式的に決まっている項目”もAIに指示して埋められますが、そこは手で入力した方が早いので、**黄色の欄はご自身で入力する設計**にしています。AIには「あなたにしか語れない経験」の言語化に集中してもらう、という考え方です。
 
@@ -43,6 +45,7 @@
 
 | | |
 | :---: | :---: |
+| ![AIインタビュー全体](docs/screenshots/interview.png)<br>**AIインタビュー開始（全体）** | ![AIインタビュー](docs/screenshots/interview-chat.png)<br>**AIがキャリアアドバイザーのように質問** |
 | ![全体画面](docs/screenshots/01-overview.png)<br>**全体画面** | ![求人票を貼り付け](docs/screenshots/02-job-paste.png)<br>**求人票を貼り付け** |
 | ![分析サマリー](docs/screenshots/03-analysis-summary.png)<br>**求める人材像の分析** | ![分析結果](docs/screenshots/04-analysis-result.png)<br>**志望動機・自己PRのお手本** |
 | ![ヒアリング項目](docs/screenshots/05-hearing.png)<br>**ヒアリング項目とインタビュー開始** | ![分析と全体](docs/screenshots/06-analysis-overview.png)<br>**分析結果と書類** |
