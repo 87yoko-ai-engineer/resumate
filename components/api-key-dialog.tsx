@@ -3,7 +3,9 @@
 import { useState } from "react";
 import {
   clearCredentials,
+  DEFAULT_MODEL,
   loadCredentials,
+  MODEL_OPTIONS,
   PROVIDER_KEY_URLS,
   PROVIDER_LABELS,
   saveCredentials,
@@ -27,12 +29,21 @@ export default function ApiKeyDialog({
     existing?.provider ?? "anthropic",
   );
   const [apiKey, setApiKey] = useState(existing?.apiKey ?? "");
+  const [model, setModel] = useState(
+    existing?.model ?? DEFAULT_MODEL[existing?.provider ?? "anthropic"],
+  );
   const [show, setShow] = useState(false);
+
+  function changeProvider(p: Provider) {
+    setProvider(p);
+    // プロバイダを変えたらモデルも既定値に合わせる
+    setModel(DEFAULT_MODEL[p]);
+  }
 
   function handleSave() {
     const trimmed = apiKey.trim();
     if (!trimmed) return;
-    saveCredentials({ provider, apiKey: trimmed });
+    saveCredentials({ provider, apiKey: trimmed, model });
     onSaved();
   }
 
@@ -83,7 +94,7 @@ export default function ApiKeyDialog({
                 <button
                   key={p}
                   type="button"
-                  onClick={() => setProvider(p)}
+                  onClick={() => changeProvider(p)}
                   className={`flex-1 rounded-md border px-3 py-2 text-sm font-medium transition-colors ${
                     provider === p
                       ? "border-slate-800 bg-slate-800 text-white"
@@ -94,6 +105,31 @@ export default function ApiKeyDialog({
                 </button>
               ))}
             </div>
+          </div>
+
+          {/* モデル選択 */}
+          <div>
+            <label
+              htmlFor="model-select"
+              className="mb-1.5 block text-sm font-medium text-slate-700"
+            >
+              モデル
+            </label>
+            <select
+              id="model-select"
+              value={model}
+              onChange={(e) => setModel(e.target.value)}
+              className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-500"
+            >
+              {MODEL_OPTIONS[provider].map((m) => (
+                <option key={m.id} value={m.id}>
+                  {m.label}
+                </option>
+              ))}
+            </select>
+            <p className="mt-1.5 text-xs text-slate-500">
+              うまく動かない場合は、お使いのキーで利用できる別のモデルに変えてみてください。
+            </p>
           </div>
 
           {/* APIキー入力 */}

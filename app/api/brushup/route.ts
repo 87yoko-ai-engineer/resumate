@@ -103,7 +103,7 @@ export async function POST(req: Request) {
     return Response.json(
       {
         error:
-          "ブラッシュアップの生成に失敗しました。時間をおいて再試行してください。",
+          "ブラッシュアップの生成に失敗しました。APIキーと、選んだモデルがそのキーで使えるかをご確認のうえ、時間をおいて再試行してください。",
       },
       { status: 500 },
     );

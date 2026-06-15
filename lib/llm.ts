@@ -13,10 +13,12 @@ export type Provider = "anthropic" | "openai";
 
 export const PROVIDER_HEADER = "x-llm-provider";
 export const API_KEY_HEADER = "x-llm-api-key";
+export const MODEL_HEADER = "x-llm-model";
 
 // 各プロバイダの既定モデル（利用者が選んだプロバイダに応じて使い分ける）
+// ※ 実在するモデルIDを指定すること。存在しないIDだとAnthropic/OpenAIが404を返し、AIが一切応答しない。
 export const DEFAULT_MODELS: Record<Provider, string> = {
-  anthropic: "claude-sonnet-4-6",
+  anthropic: "claude-sonnet-4-5",
   openai: "gpt-4o",
 };
 
@@ -44,6 +46,9 @@ function normalizeProvider(value: string | null): Provider {
 export function resolveModelFromRequest(req: Request): ResolvedModel {
   const provider = normalizeProvider(req.headers.get(PROVIDER_HEADER));
   const apiKey = (req.headers.get(API_KEY_HEADER) ?? "").trim();
+  // 利用者が選んだモデルID（未指定なら既定モデル）
+  const modelId =
+    (req.headers.get(MODEL_HEADER) ?? "").trim() || DEFAULT_MODELS[provider];
 
   if (!apiKey) {
     throw new CredentialsError(
@@ -53,9 +58,9 @@ export function resolveModelFromRequest(req: Request): ResolvedModel {
 
   if (provider === "openai") {
     const openai = createOpenAI({ apiKey });
-    return { model: openai(DEFAULT_MODELS.openai), provider };
+    return { model: openai(modelId), provider };
   }
 
   const anthropic = createAnthropic({ apiKey });
-  return { model: anthropic(DEFAULT_MODELS.anthropic), provider };
+  return { model: anthropic(modelId), provider };
 }

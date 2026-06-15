@@ -11,17 +11,41 @@ export type Provider = "anthropic" | "openai";
 
 export const PROVIDER_HEADER = "x-llm-provider";
 export const API_KEY_HEADER = "x-llm-api-key";
+export const MODEL_HEADER = "x-llm-model";
 
 const STORAGE_KEY = "resumate:llm-credentials";
 
 export interface LlmCredentials {
   provider: Provider;
   apiKey: string;
+  /** 利用するモデルID。未指定なら各プロバイダの既定モデルを使う。 */
+  model?: string;
 }
 
 export const PROVIDER_LABELS: Record<Provider, string> = {
   anthropic: "Anthropic（Claude）",
   openai: "OpenAI（ChatGPT）",
+};
+
+/** プロバイダごとの選択肢（キーのアカウントで使えるものを選べるようにする）。 */
+export const MODEL_OPTIONS: Record<Provider, { id: string; label: string }[]> = {
+  anthropic: [
+    { id: "claude-sonnet-4-5", label: "Claude Sonnet 4.5（高性能・推奨）" },
+    { id: "claude-3-7-sonnet-latest", label: "Claude 3.7 Sonnet" },
+    { id: "claude-3-5-sonnet-latest", label: "Claude 3.5 Sonnet（広く使える）" },
+    { id: "claude-3-5-haiku-latest", label: "Claude 3.5 Haiku（高速・低コスト）" },
+  ],
+  openai: [
+    { id: "gpt-4o", label: "GPT-4o（推奨）" },
+    { id: "gpt-4o-mini", label: "GPT-4o mini（高速・低コスト）" },
+    { id: "gpt-4.1", label: "GPT-4.1" },
+    { id: "gpt-4.1-mini", label: "GPT-4.1 mini（高速・低コスト）" },
+  ],
+};
+
+export const DEFAULT_MODEL: Record<Provider, string> = {
+  anthropic: "claude-sonnet-4-5",
+  openai: "gpt-4o",
 };
 
 /** キー取得先の案内 */
@@ -41,7 +65,11 @@ export function loadCredentials(): LlmCredentials | null {
       typeof parsed.apiKey === "string" &&
       parsed.apiKey.trim().length > 0
     ) {
-      return { provider: parsed.provider, apiKey: parsed.apiKey };
+      const model =
+        typeof parsed.model === "string" && parsed.model.trim().length > 0
+          ? parsed.model.trim()
+          : DEFAULT_MODEL[parsed.provider];
+      return { provider: parsed.provider, apiKey: parsed.apiKey, model };
     }
     return null;
   } catch {
@@ -73,5 +101,6 @@ export function authHeaders(): Record<string, string> {
   return {
     [PROVIDER_HEADER]: creds.provider,
     [API_KEY_HEADER]: creds.apiKey,
+    [MODEL_HEADER]: creds.model ?? DEFAULT_MODEL[creds.provider],
   };
 }

@@ -184,8 +184,10 @@ export default function ChatPanel({
 
           {error && (
             <div className="rounded-md bg-red-50 px-3 py-2 text-xs text-red-600">
-              通信に失敗しました。少し時間をおいて再送信してください。
-              （右上の「⚙️ APIキー設定」でキーが正しく入力されているかもご確認ください）
+              AIの応答に失敗しました。右上の「⚙️ APIキー設定」で、
+              <strong>APIキーが正しいか</strong>、
+              <strong>選んだモデルがそのキーで使えるか</strong>をご確認のうえ、
+              少し時間をおいて再送信してください。
             </div>
           )}
         </ConversationContent>
