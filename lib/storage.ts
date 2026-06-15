@@ -1,4 +1,4 @@
-import type { ResumeData } from "./resume-schema";
+import type { JobAnalysis, ResumeData } from "./resume-schema";
 import { emptyResume } from "./resume-schema";
 
 const STORAGE_KEY = "ai-resume-builder:data";
@@ -6,6 +6,7 @@ const STORAGE_KEY = "ai-resume-builder:data";
 export interface PersistedState {
   resume: ResumeData;
   jobPosting: string;
+  jobAnalysis: JobAnalysis | null;
 }
 
 export function loadState(): PersistedState | null {
@@ -17,6 +18,7 @@ export function loadState(): PersistedState | null {
     return {
       resume: { ...emptyResume(), ...parsed.resume },
       jobPosting: parsed.jobPosting ?? "",
+      jobAnalysis: parsed.jobAnalysis ?? null,
     };
   } catch {
     return null;

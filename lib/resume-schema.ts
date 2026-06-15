@@ -45,6 +45,7 @@ export interface ResumeBasic {
   address: string;
   phone: string;
   email: string;
+  photo?: string;
 }
 
 export interface ResumeData {

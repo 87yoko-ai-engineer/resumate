@@ -13,9 +13,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "AI履歴書作成サービス",
+  title: "ResuMate｜AI履歴書・職務経歴書メーカー",
   description:
-    "AIとの対話で、採用担当者に響く履歴書・職務経歴書を作成できるサービス。",
+    "AIとの対話で、採用担当者に響く履歴書・職務経歴書を作成できるサービス。お持ちのAnthropic / OpenAIのAPIキーで動きます。",
 };
 
 export default function RootLayout({

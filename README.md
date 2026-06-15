@@ -1,36 +1,82 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# ResuMate（レジュメイト）
 
-## Getting Started
+**AIとの対話で、採用担当者に響く「履歴書・職務経歴書」を一緒に仕上げるWebサービス。**
 
-First, run the development server:
+質問に答えていくだけで、自己PR・志望動機・職務経歴がきれいな書類に整っていきます。求人票を貼り付ければ、その企業に合わせた質問とアドバイスもしてくれます。
+
+![ResuMate 全体画面](docs/screenshots/overview.png)
+
+---
+
+## ✨ 特徴
+
+- **対話で書類が完成** — キャリアアドバイザー役のAIがヒアリングし、話した内容が右側の書類に自動で反映されます。
+- **求人票に合わせた最適化** — 求人ページのURLやテキストを読み込ませると、企業が求める人物像を分析し、それに沿った質問・志望動機・自己PRを提案します。
+- **ワンクリックでブラッシュアップ** — 書いた文章を「採用担当者に響く文章」へAIが磨き上げます。
+- **履歴書＋職務経歴書の両対応** — タブひとつで切り替え。証明写真のカメラ撮影（背景色・ガイドライン付き）にも対応。
+- **印刷 / PDF出力** — そのまま提出できる形で書き出せます。
+- **入力は自動保存** — ブラウザに一時保存され、続きから作業できます。
+- **🔑 自分のAPIキーで動く（BYOK）** — **Anthropic（Claude）** または **OpenAI（ChatGPT）** のお好きな方を選び、ご自身のAPIキーを入力して利用します。キーは**お使いのブラウザの中だけ**に保存され、運営側のサーバーには保存されません。
+
+---
+
+## 🖼️ スクリーンショット
+
+| 履歴書フォーム | 求人票の分析 |
+| :---: | :---: |
+| ![履歴書フォーム](docs/screenshots/resume-form.png) | ![求人分析](docs/screenshots/job-analysis.png) |
+
+| 証明写真のカメラ撮影 | 職務経歴書 |
+| :---: | :---: |
+| ![写真撮影](docs/screenshots/photo-capture.png) | ![職務経歴書](docs/screenshots/cv.png) |
+
+---
+
+## 🚀 使い方
+
+1. 画面右上の **「⚙️ APIキー設定」** を開き、プロバイダ（Anthropic / OpenAI）を選んでご自身のAPIキーを入力します。
+   - Anthropic のキー: https://console.anthropic.com/settings/keys
+   - OpenAI のキー: https://platform.openai.com/api-keys
+2. 右側の黄色い欄に、氏名・生年月日・住所・連絡先など基本情報を入力します。
+3. ヒアリングを始めます（どちらか一方でOK）。
+   - **応募したい求人がある場合**: 「応募先の求人情報」に求人票またはURLを貼り付けて分析 → 「AIにヒアリングを始めてもらう」。
+   - **求人が決まっていない場合**: チャットに「始めます」と送信。
+4. AIの質問に答えるだけで、自己PR・志望動機・職務経歴が書類に反映されます。
+5. 必要に応じて「✨ AIブラッシュアップ」で文章を磨き、**「印刷 / PDF出力」** で書き出します。
+
+---
+
+## 🛠️ 技術スタック
+
+- [Next.js 16](https://nextjs.org/)（App Router / Turbopack）+ React 19
+- TypeScript
+- [Vercel AI SDK v6](https://sdk.vercel.ai/) — `@ai-sdk/anthropic` / `@ai-sdk/openai`
+- Tailwind CSS v4
+- Zod（AIの構造化出力スキーマ）
+- ホスティング: Vercel
+
+---
+
+## 💻 ローカルで動かす
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+# http://localhost:3000 を開く
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+APIキーはサーバー側の環境変数ではなく、**ブラウザの「⚙️ APIキー設定」から入力**します（環境変数の設定は不要です）。
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+---
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 🔒 APIキーの取り扱いについて
 
-## Learn More
+このサービスは「Bring Your Own Key（自分のキーを持ち込む）」方式です。
 
-To learn more about Next.js, take a look at the following resources:
+- 入力されたAPIキーは、利用者本人のブラウザの `localStorage` にのみ保存されます。
+- AIへのリクエストのたびに、サーバーを経由してAIプロバイダへ渡されますが、**サーバー側には一切保存・記録されません**。
+- 共用のパソコンを使う場合は、設定画面の「キーを削除」からいつでも消去できます。
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+---
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+*この作品は、プログラミング講座の学習成果として制作しました。*

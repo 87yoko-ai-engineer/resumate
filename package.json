@@ -10,7 +10,9 @@
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^3.0.78",
+    "@ai-sdk/openai": "^3.0.71",
     "@ai-sdk/react": "^3.0.186",
+    "@mediapipe/selfie_segmentation": "^0.1.1675465747",
     "@radix-ui/react-use-controllable-state": "^1.2.2",
     "@rive-app/react-webgl2": "^4.28.5",
     "@streamdown/cjk": "^1.0.3",

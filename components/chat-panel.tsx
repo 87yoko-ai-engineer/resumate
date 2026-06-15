@@ -4,6 +4,7 @@ import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport, lastAssistantMessageIsCompleteWithToolCalls } from "ai";
 import { useEffect, useRef } from "react";
 import type { JobAnalysis, ResumeUpdate } from "@/lib/resume-schema";
+import { authHeaders, hasCredentials } from "@/lib/llm-client";
 import {
   Conversation,
   ConversationContent,
@@ -15,24 +16,27 @@ import {
   MessageResponse,
 } from "@/components/ai-elements/message";
 
-const STARTER = `こんにちは！転職活動向けの履歴書・職務経歴書づくりをお手伝いします。
+const STARTER_BASE = `こんにちは！転職活動の書類づくりをお手伝いします。
 
-**右側のプレビューに直接入力できる項目があります：**
-- 名前・ふりがな
-- 生年月日（年・月・日をドロップダウンで選択）
-- 性別（選択肢から選ぶ）
-- 住所（郵便番号を入れると候補が自動で表示されます）
+**① まず右側の黄色い欄に直接入力してください**
+氏名・ふりがな・生年月日・性別・住所・電話番号・メールアドレス
 
-**このチャットでできること：**
-学歴・職歴・資格・志望動機・自己PRなどをわたしに話してください。会話しながら一緒に書類を完成させましょう！
+---
 
-まずはこれまでのお仕事やご経歴について、簡単に教えてください。`;
+**② ヒアリングの開始方法（どちらか一方でOK）**
+
+📋 **応募したい求人がある場合**
+→ 右上の「応募先の求人情報」に求人票または求人ページのURLを貼り付けて分析し、**「AIにヒアリングを始めてもらう」ボタン**を押してください。求人に合わせた質問をします。
+
+💬 **求人が決まっていない場合**
+→ 黄色い欄への入力が終わったら、**「始めます」とこのチャットに送ってください**。自己PR・志望動機・職務経歴を一緒に作ります。`;
 
 interface ChatPanelProps {
   onResumeUpdate: (update: ResumeUpdate) => void;
   jobPosting: string;
   jobAnalysis: JobAnalysis | null;
   hiringTrigger: number;
+  onNeedApiKey: () => void;
 }
 
 export default function ChatPanel({
@@ -40,6 +44,7 @@ export default function ChatPanel({
   jobPosting,
   jobAnalysis,
   hiringTrigger,
+  onNeedApiKey,
 }: ChatPanelProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const jobPostingRef = useRef(jobPosting);
@@ -61,6 +66,11 @@ export default function ChatPanel({
         const existing = options?.body ? JSON.parse(options.body as string) : {};
         return fetch(url, {
           ...options,
+          headers: {
+            ...(options?.headers as Record<string, string> | undefined),
+            "content-type": "application/json",
+            ...authHeaders(),
+          },
           body: JSON.stringify({
             ...existing,
             jobPosting: jobPostingRef.current,
@@ -86,15 +96,23 @@ export default function ChatPanel({
   useEffect(() => {
     if (hiringTrigger > 0 && hiringTrigger !== prevTriggerRef.current) {
       prevTriggerRef.current = hiringTrigger;
+      if (!hasCredentials()) {
+        onNeedApiKey();
+        return;
+      }
       sendMessage({ text: "[__HIRING_START__] ヒアリングを開始してください。" });
     }
-  }, [hiringTrigger, sendMessage]);
+  }, [hiringTrigger, sendMessage, onNeedApiKey]);
 
   const busy = status === "submitted" || status === "streaming";
 
   function submit() {
     const text = textareaRef.current?.value.trim();
     if (!text || busy) return;
+    if (!hasCredentials()) {
+      onNeedApiKey();
+      return;
+    }
     sendMessage({ text });
     if (textareaRef.current) textareaRef.current.value = "";
   }
@@ -119,7 +137,7 @@ export default function ChatPanel({
         <ConversationContent className="gap-4">
           <Message from="assistant">
             <MessageContent>
-              <MessageResponse>{STARTER}</MessageResponse>
+              <MessageResponse>{STARTER_BASE}</MessageResponse>
             </MessageContent>
           </Message>
 
@@ -167,7 +185,7 @@ export default function ChatPanel({
           {error && (
             <div className="rounded-md bg-red-50 px-3 py-2 text-xs text-red-600">
               通信に失敗しました。少し時間をおいて再送信してください。
-              （ANTHROPIC_API_KEY の設定もご確認ください）
+              （右上の「⚙️ APIキー設定」でキーが正しく入力されているかもご確認ください）
             </div>
           )}
         </ConversationContent>

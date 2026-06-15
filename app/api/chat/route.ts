@@ -1,4 +1,3 @@
-import { anthropic } from "@ai-sdk/anthropic";
 import {
   convertToModelMessages,
   stepCountIs,
@@ -9,10 +8,9 @@ import {
 import { buildChatSystemPrompt } from "@/lib/prompts";
 import { resumeUpdateSchema } from "@/lib/resume-schema";
 import { getClientIp, isSameOrigin, rateLimit } from "@/lib/rate-limit";
+import { CredentialsError, resolveModelFromRequest, type ResolvedModel } from "@/lib/llm";
 
 export const maxDuration = 60;
-
-const MODEL = process.env.ANTHROPIC_MODEL ?? "claude-sonnet-4-6";
 
 // --- セキュリティ上の制限値（通常利用では当たらない緩さに設定）---
 const MAX_BODY_BYTES = 200_000; // リクエストボディの上限
@@ -28,9 +26,13 @@ function errorJson(message: string, status: number, extraHeaders?: HeadersInit) 
 }
 
 export async function POST(req: Request) {
-  // 1. APIキーの存在確認
-  if (!process.env.ANTHROPIC_API_KEY) {
-    return errorJson("サーバー側の設定が未完了です（APIキー未設定）。", 500);
+  // 1. 利用者の API キー（BYOK）からモデルを解決
+  let resolved: ResolvedModel;
+  try {
+    resolved = resolveModelFromRequest(req);
+  } catch (e) {
+    if (e instanceof CredentialsError) return errorJson(e.message, 401);
+    throw e;
   }
 
   // 2. 同一オリジンチェック（他サイトからの直接呼び出しを拒否）
@@ -81,7 +83,7 @@ export async function POST(req: Request) {
   const modelMessages = await convertToModelMessages(messages);
 
   const result = streamText({
-    model: anthropic(MODEL),
+    model: resolved.model,
     system: buildChatSystemPrompt(jobPosting, jobAnalysis),
     messages: modelMessages,
     stopWhen: stepCountIs(5),

@@ -1,13 +1,11 @@
-import { anthropic } from "@ai-sdk/anthropic";
 import { generateText } from "ai";
 import { buildBrushupPrompt } from "@/lib/prompts";
 import { BRUSHUP_FIELDS, emptyResume } from "@/lib/resume-schema";
 import type { BrushupField, ResumeData } from "@/lib/resume-schema";
 import { getClientIp, isSameOrigin, rateLimit } from "@/lib/rate-limit";
+import { CredentialsError, resolveModelFromRequest, type ResolvedModel } from "@/lib/llm";
 
 export const maxDuration = 60;
-
-const MODEL = process.env.ANTHROPIC_MODEL ?? "claude-sonnet-4-6";
 
 // --- セキュリティ上の制限値（通常利用では当たらない緩さに設定）---
 const MAX_BODY_BYTES = 60_000; // リクエストボディの上限
@@ -23,11 +21,15 @@ interface BrushupRequest {
 }
 
 export async function POST(req: Request) {
-  if (!process.env.ANTHROPIC_API_KEY) {
-    return Response.json(
-      { error: "サーバー側の設定が未完了です（APIキー未設定）。" },
-      { status: 500 },
-    );
+  // 利用者の API キー（BYOK）からモデルを解決
+  let resolved: ResolvedModel;
+  try {
+    resolved = resolveModelFromRequest(req);
+  } catch (e) {
+    if (e instanceof CredentialsError) {
+      return Response.json({ error: e.message }, { status: 401 });
+    }
+    throw e;
   }
 
   // 同一オリジンチェック
@@ -89,7 +91,7 @@ export async function POST(req: Request) {
 
   try {
     const { text } = await generateText({
-      model: anthropic(MODEL),
+      model: resolved.model,
       prompt: buildBrushupPrompt(field, originalText, resume, jobPosting),
       // 1リクエストあたりのコストを一定範囲に固定
       maxOutputTokens: 1500,

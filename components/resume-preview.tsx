@@ -1,7 +1,7 @@
 "use client";
 
 import { useId, useState, useEffect, useRef } from "react";
-import { Mic, MicOff } from "lucide-react";
+import { Mic, MicOff, Camera, Upload } from "lucide-react";
 import {
   BRUSHUP_FIELDS,
   newId,
@@ -67,83 +67,98 @@ function ResumeDoc({
         <span className="text-xs text-slate-500">{TODAY_LABEL}</span>
       </div>
 
-      {/* 氏名・生年月日 */}
-      <table className="w-full border border-slate-400 text-sm">
-        <tbody>
-          <tr>
-            <Th>ふりがな</Th>
-            <Td colSpan={3}>
-              <Line
-                value={resume.basic.kana}
-                onChange={(v) => updateBasic({ kana: v })}
-                placeholder="やまだ たろう"
-              />
-            </Td>
-          </tr>
-          <tr>
-            <Th>氏名</Th>
-            <Td colSpan={3}>
-              <Line
-                value={resume.basic.name}
-                onChange={(v) => updateBasic({ name: v })}
-                placeholder="山田 太郎"
-                className="text-lg font-semibold"
-              />
-            </Td>
-          </tr>
-          <tr>
-            <Th>生年月日</Th>
-            <Td>
-              <BirthDateSelect
-                value={resume.basic.birthDate}
-                onChange={(v) => updateBasic({ birthDate: v })}
-              />
-            </Td>
-            <Th>性別</Th>
-            <Td>
-              <GenderSelect
-                value={resume.basic.gender}
-                onChange={(v) => updateBasic({ gender: v })}
-              />
-            </Td>
-          </tr>
-        </tbody>
-      </table>
+      {/* 自己入力エリア：基本情報 */}
+      <div className="space-y-3 rounded-lg bg-yellow-50 p-3 print:rounded-none print:bg-transparent print:p-0">
+        {/* 基本情報 入力案内 */}
+        <div className="flex items-center gap-2 rounded-md border border-yellow-300 bg-yellow-100 px-3 py-2 text-xs text-yellow-800 print:hidden">
+          <span>✏️</span>
+          <span><strong>黄色の欄はご自身で入力してください。</strong>氏名・生年月日・住所・連絡先・免許資格が対象です。職歴・学歴・自己PRはチャットで話すと自動で反映されます。</span>
+        </div>
 
-      {/* 連絡先 */}
-      <table className="w-full border border-slate-400 text-sm">
-        <tbody>
-          <tr>
-            <Th>現住所</Th>
-            <Td colSpan={3}>
-              <AddressInput
-                zipcode={resume.basic.zipcode ?? ""}
-                address={resume.basic.address}
-                onZipcodeChange={(v) => updateBasic({ zipcode: v })}
-                onAddressChange={(v) => updateBasic({ address: v })}
-              />
-            </Td>
-          </tr>
-          <tr>
-            <Th>電話</Th>
-            <Td>
-              <Line
-                value={resume.basic.phone}
-                onChange={(v) => updateBasic({ phone: v })}
-                placeholder="090-1234-5678"
-              />
-            </Td>
-            <Th>メール</Th>
-            <Td>
-              <Line
-                value={resume.basic.email}
-                onChange={(v) => updateBasic({ email: v })}
-                placeholder="taro@example.com"
-              />
-            </Td>
-          </tr>
-        </tbody>
-      </table>
+        {/* 氏名・生年月日 ＋ 写真 */}
+        <div className="flex items-stretch gap-3">
+          <table className="min-w-0 flex-1 border border-slate-400 text-sm">
+            <tbody>
+              <tr>
+                <Th>ふりがな</Th>
+                <Td colSpan={3}>
+                  <Line
+                    value={resume.basic.kana}
+                    onChange={(v) => updateBasic({ kana: v })}
+                    placeholder="やまだ たろう"
+                  />
+                </Td>
+              </tr>
+              <tr>
+                <Th>氏名</Th>
+                <Td colSpan={3}>
+                  <Line
+                    value={resume.basic.name}
+                    onChange={(v) => updateBasic({ name: v })}
+                    placeholder="山田 太郎"
+                    className="text-lg font-semibold"
+                  />
+                </Td>
+              </tr>
+              <tr>
+                <Th>生年月日</Th>
+                <Td>
+                  <BirthDateSelect
+                    value={resume.basic.birthDate}
+                    onChange={(v) => updateBasic({ birthDate: v })}
+                  />
+                </Td>
+                <Th>性別</Th>
+                <Td>
+                  <GenderSelect
+                    value={resume.basic.gender}
+                    onChange={(v) => updateBasic({ gender: v })}
+                  />
+                </Td>
+              </tr>
+            </tbody>
+          </table>
+          <PhotoUpload
+            value={resume.basic.photo}
+            onChange={(v) => updateBasic({ photo: v ?? undefined })}
+          />
+        </div>
+
+        {/* 連絡先 */}
+        <table className="w-full border border-slate-400 text-sm">
+          <tbody>
+            <tr>
+              <Th>現住所</Th>
+              <Td colSpan={3}>
+                <AddressInput
+                  zipcode={resume.basic.zipcode ?? ""}
+                  address={resume.basic.address}
+                  onZipcodeChange={(v) => updateBasic({ zipcode: v })}
+                  onAddressChange={(v) => updateBasic({ address: v })}
+                />
+              </Td>
+            </tr>
+            <tr>
+              <Th>電話</Th>
+              <Td>
+                <Line
+                  value={resume.basic.phone}
+                  onChange={(v) => updateBasic({ phone: v })}
+                  placeholder="090-1234-5678"
+                />
+              </Td>
+              <Th>メール</Th>
+              <Td>
+                <Line
+                  value={resume.basic.email}
+                  onChange={(v) => updateBasic({ email: v })}
+                  placeholder="taro@example.com"
+                />
+              </Td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
 
       {/* 学歴・職歴 */}
       <Section title="学歴・職歴">
@@ -235,8 +250,9 @@ function ResumeDoc({
         </div>
       </Section>
 
-      {/* 免許・資格 */}
-      <Section title="免許・資格">
+      {/* 自己入力エリア：免許・資格 */}
+      <div className="rounded-lg bg-yellow-50 p-3 print:rounded-none print:bg-transparent print:p-0">
+        <Section title="免許・資格">
         <table className="w-full border border-slate-400 text-sm">
           <thead>
             <tr>
@@ -298,7 +314,8 @@ function ResumeDoc({
             免許・資格を追加
           </AddButton>
         </div>
-      </Section>
+        </Section>
+      </div>
 
       {/* 志望の動機 */}
       <Section title="志望の動機" brushupField="motivation" onBrushup={onBrushup}>
@@ -616,6 +633,319 @@ function DateRow({
         </button>
       </td>
     </tr>
+  );
+}
+
+function PhotoUpload({
+  value,
+  onChange,
+}: {
+  value?: string;
+  onChange: (v: string | undefined) => void;
+}) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [cameraOpen, setCameraOpen] = useState(false);
+
+  const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => onChange(reader.result as string);
+    reader.readAsDataURL(file);
+    e.target.value = "";
+  };
+
+  return (
+    <div className="flex shrink-0 flex-col items-center gap-1">
+      <button
+        type="button"
+        onClick={() => inputRef.current?.click()}
+        className="group relative flex h-[120px] w-[90px] flex-col items-center justify-center overflow-hidden rounded border-2 border-dashed border-slate-400 bg-slate-50 transition-colors hover:border-slate-500 hover:bg-slate-100 print:border-solid print:border-slate-400"
+        title="クリックして写真をアップロード"
+      >
+        {value ? (
+          <>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={value} alt="証明写真" className="h-full w-full object-cover" />
+            <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/40 opacity-0 transition-opacity group-hover:opacity-100 print:hidden">
+              <Camera className="size-5 text-white" />
+              <span className="mt-1 text-[10px] text-white">変更</span>
+            </div>
+          </>
+        ) : (
+          <>
+            <Upload className="size-6 text-slate-400 group-hover:text-slate-600 print:hidden" />
+            <span className="mt-1 text-[10px] text-slate-400 print:hidden">写真を追加</span>
+            <span className="hidden text-xs text-slate-400 print:block">写真</span>
+          </>
+        )}
+      </button>
+      <span className="text-[10px] text-slate-400 print:hidden">3cm × 4cm 推奨</span>
+      <button
+        type="button"
+        onClick={() => setCameraOpen(true)}
+        className="flex items-center gap-0.5 text-[10px] text-blue-500 hover:underline print:hidden"
+      >
+        <Camera className="size-3" />
+        カメラで撮影
+      </button>
+      {value && (
+        <button
+          type="button"
+          onClick={() => onChange(undefined)}
+          className="text-[10px] text-red-400 hover:underline print:hidden"
+        >
+          写真を削除
+        </button>
+      )}
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/*"
+        onChange={handleFile}
+        className="hidden"
+      />
+      {cameraOpen && (
+        <CameraModal
+          onCapture={(dataUrl) => { onChange(dataUrl); setCameraOpen(false); }}
+          onClose={() => setCameraOpen(false)}
+        />
+      )}
+    </div>
+  );
+}
+
+const BG_OPTIONS = [
+  { label: "白", value: "#ffffff" },
+  { label: "青", value: "#4a90d9" },
+  { label: "グレー", value: "#9ca3af" },
+];
+
+function CameraModal({
+  onCapture,
+  onClose,
+}: {
+  onCapture: (dataUrl: string) => void;
+  onClose: () => void;
+}) {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const tmpCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  const maskCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [ready, setReady] = useState(false);
+  const [bgColor, setBgColor] = useState("#4a90d9");
+  const [beautyOn, setBeautyOn] = useState(false);
+  const [showGuide, setShowGuide] = useState(true);
+  const streamRef = useRef<MediaStream | null>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const segRef = useRef<any>(null);
+  const activeRef = useRef(true);
+  const processingRef = useRef(false);
+  const bgColorRef = useRef(bgColor);
+  const beautyRef = useRef(beautyOn);
+
+  useEffect(() => { bgColorRef.current = bgColor; }, [bgColor]);
+  useEffect(() => { beautyRef.current = beautyOn; }, [beautyOn]);
+
+  useEffect(() => {
+    activeRef.current = true;
+    tmpCanvasRef.current = document.createElement("canvas");
+    maskCanvasRef.current = document.createElement("canvas");
+
+    const init = async () => {
+      const { SelfieSegmentation } = await import("@mediapipe/selfie_segmentation");
+      if (!activeRef.current) return;
+
+      const seg = new SelfieSegmentation({
+        locateFile: (file: string) =>
+          `https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation/${file}`,
+      });
+      seg.setOptions({ modelSelection: 1, selfieMode: true });
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      seg.onResults((results: any) => {
+        if (!activeRef.current) return;
+        const canvas = canvasRef.current;
+        const tmp = tmpCanvasRef.current;
+        const maskCanvas = maskCanvasRef.current;
+        if (!canvas || !tmp || !maskCanvas) return;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) return;
+        const w = canvas.width;
+        const h = canvas.height;
+
+        // マスクをぼかして輪郭をなめらかにする
+        maskCanvas.width = w;
+        maskCanvas.height = h;
+        const maskCtx = maskCanvas.getContext("2d")!;
+        maskCtx.clearRect(0, 0, w, h);
+        // ぼかしで輪郭を外側に拡張 → コントラストで締めることで
+        // 髪の毛を含めつつ背景の染み込みを抑える
+        maskCtx.filter = "blur(3px) contrast(6)";
+        maskCtx.drawImage(results.segmentationMask, 0, 0, w, h);
+        maskCtx.filter = "none";
+
+        // 人物だけを切り抜いて合成
+        tmp.width = w;
+        tmp.height = h;
+        const tmpCtx = tmp.getContext("2d")!;
+        tmpCtx.clearRect(0, 0, w, h);
+        if (beautyRef.current) {
+          tmpCtx.filter = "blur(0.8px) brightness(1.08) contrast(0.92) saturate(1.1)";
+        }
+        tmpCtx.drawImage(results.image, 0, 0, w, h);
+        tmpCtx.filter = "none";
+        tmpCtx.globalCompositeOperation = "destination-in";
+        tmpCtx.drawImage(maskCanvas, 0, 0, w, h);
+
+        // 背景色 → 人物の順で描画
+        ctx.fillStyle = bgColorRef.current;
+        ctx.fillRect(0, 0, w, h);
+        ctx.drawImage(tmp, 0, 0);
+
+        processingRef.current = false;
+      });
+
+      segRef.current = seg;
+
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: "user", width: { ideal: 640 }, height: { ideal: 480 } },
+        audio: false,
+      });
+      if (!activeRef.current) { stream.getTracks().forEach((t) => t.stop()); return; }
+
+      streamRef.current = stream;
+      const video = videoRef.current!;
+      video.srcObject = stream;
+      await new Promise<void>((resolve) => { video.onloadeddata = () => resolve(); });
+      if (!activeRef.current) return;
+
+      const canvas = canvasRef.current!;
+      canvas.width = video.videoWidth || 640;
+      canvas.height = video.videoHeight || 480;
+      setReady(true);
+
+      const loop = async () => {
+        if (!activeRef.current) return;
+        if (!processingRef.current && segRef.current && video.readyState === 4) {
+          processingRef.current = true;
+          await segRef.current.send({ image: video });
+        }
+        requestAnimationFrame(loop);
+      };
+      requestAnimationFrame(loop);
+    };
+
+    init().catch(() => {
+      if (activeRef.current) {
+        setError("カメラへのアクセスが許可されていません。\nブラウザの設定でカメラを許可してください。");
+      }
+    });
+
+    return () => {
+      activeRef.current = false;
+      streamRef.current?.getTracks().forEach((t) => t.stop());
+      segRef.current?.close();
+    };
+  }, []);
+
+  const handleCapture = () => {
+    const canvas = canvasRef.current;
+    if (!canvas || !ready) return;
+    onCapture(canvas.toDataURL("image/jpeg", 0.9));
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 print:hidden">
+      <div className="flex w-[420px] flex-col gap-4 rounded-xl bg-white p-5 shadow-xl">
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-bold text-slate-800">カメラで撮影</h3>
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-600" aria-label="閉じる">
+            ✕
+          </button>
+        </div>
+
+        {error ? (
+          <p className="whitespace-pre-line rounded-lg bg-red-50 p-3 text-xs text-red-600">{error}</p>
+        ) : (
+          <div className="relative overflow-hidden rounded-lg bg-black" style={{ aspectRatio: "4/3" }}>
+            {/* 非表示の映像ソース */}
+            <video ref={videoRef} autoPlay playsInline muted className="absolute inset-0 h-full w-full opacity-0" />
+            {/* 合成済みキャンバス */}
+            <canvas ref={canvasRef} className="h-full w-full object-cover" />
+            {/* ガイドライン */}
+            {showGuide && (
+              <div className="pointer-events-none absolute inset-0">
+                <div className="absolute bottom-0 left-1/2 top-0 w-px -translate-x-1/2 bg-white/50" />
+                <div className="absolute left-0 right-0 top-1/2 h-px -translate-y-1/2 bg-white/50" />
+                <div
+                  className="absolute rounded-full border-2 border-dashed border-white/70"
+                  style={{ left: "28%", right: "28%", top: "6%", bottom: "28%" }}
+                />
+              </div>
+            )}
+            {!ready && (
+              <div className="absolute inset-0 flex items-center justify-center">
+                <span className="animate-pulse text-xs text-white">カメラ起動中…</span>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* 背景色 */}
+        <div>
+          <p className="mb-1.5 text-xs font-medium text-slate-700">背景色</p>
+          <div className="flex gap-2">
+            {BG_OPTIONS.map((opt) => (
+              <button
+                key={opt.value}
+                onClick={() => setBgColor(opt.value)}
+                title={opt.label}
+                className={`flex h-8 w-8 items-center justify-center rounded-full border-2 transition-all ${
+                  bgColor === opt.value ? "scale-110 border-slate-700" : "border-slate-300"
+                }`}
+                style={{ backgroundColor: opt.value }}
+              >
+                {bgColor === opt.value && (
+                  <span className="text-xs" style={{ color: opt.value === "#ffffff" ? "#334155" : "#fff" }}>
+                    ✓
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* オプション */}
+        <div className="flex flex-col gap-2">
+          <label className="flex cursor-pointer items-center gap-2 text-xs text-slate-600">
+            <input type="checkbox" checked={beautyOn} onChange={(e) => setBeautyOn(e.target.checked)} className="rounded" />
+            ✨ 美肌フィルター
+          </label>
+          <label className="flex cursor-pointer items-center gap-2 text-xs text-slate-600">
+            <input type="checkbox" checked={showGuide} onChange={(e) => setShowGuide(e.target.checked)} className="rounded" />
+            ガイドラインを表示
+          </label>
+        </div>
+
+        <div className="flex gap-2">
+          <button
+            onClick={onClose}
+            className="flex-1 rounded-lg border border-slate-300 py-2 text-sm text-slate-600 hover:bg-slate-50"
+          >
+            キャンセル
+          </button>
+          <button
+            onClick={handleCapture}
+            disabled={!ready}
+            className="flex-1 rounded-lg bg-slate-800 py-2 text-sm font-medium text-white hover:bg-slate-700 disabled:opacity-40"
+          >
+            撮影する
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
 

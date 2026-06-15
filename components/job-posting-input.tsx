@@ -2,12 +2,15 @@
 
 import { useState } from "react";
 import type { JobAnalysis } from "@/lib/resume-schema";
+import { authHeaders, hasCredentials } from "@/lib/llm-client";
 
 interface JobPostingInputProps {
   value: string;
   onChange: (value: string) => void;
   onAnalysis: (analysis: JobAnalysis) => void;
+  onResetAnalysis: () => void;
   onStartHiring: () => void;
+  onNeedApiKey: () => void;
   analysis: JobAnalysis | null;
 }
 
@@ -18,7 +21,9 @@ export default function JobPostingInput({
   value,
   onChange,
   onAnalysis,
+  onResetAnalysis,
   onStartHiring,
+  onNeedApiKey,
   analysis,
 }: JobPostingInputProps) {
   const [open, setOpen] = useState(false);
@@ -36,7 +41,7 @@ export default function JobPostingInput({
   async function analyzeText(jobText: string): Promise<void> {
     const res = await fetch("/api/analyze-job", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...authHeaders() },
       body: JSON.stringify({ jobText }),
     });
     const data = await res.json();
@@ -47,6 +52,10 @@ export default function JobPostingInput({
   }
 
   async function handleUrlFetch() {
+    if (!hasCredentials()) {
+      onNeedApiKey();
+      return;
+    }
     setUrlError("");
     setUrlStep("fetching");
     try {
@@ -74,6 +83,10 @@ export default function JobPostingInput({
   async function handleTextAnalyze() {
     if (!value.trim()) {
       setTextError("求人情報を入力してください。");
+      return;
+    }
+    if (!hasCredentials()) {
+      onNeedApiKey();
       return;
     }
     setTextError("");
@@ -168,7 +181,17 @@ export default function JobPostingInput({
                 <p className="text-xs text-slate-500 animate-pulse">分析中...</p>
               )}
               {urlStep === "done" && (
-                <p className="text-xs text-emerald-600">取得・分析が完了しました。</p>
+                <div className="flex items-center gap-2">
+                  <p className="text-xs text-emerald-600">取得・分析が完了しました。</p>
+                  {analysis && (
+                    <button
+                      onClick={onResetAnalysis}
+                      className="rounded-md border border-red-200 bg-white px-3 py-1 text-xs font-medium text-red-500 hover:bg-red-50"
+                    >
+                      企業情報をリセット
+                    </button>
+                  )}
+                </div>
               )}
               {urlStep === "error" && urlError && (
                 <p className="text-xs text-red-600">{urlError}</p>
@@ -190,13 +213,23 @@ export default function JobPostingInput({
                 placeholder="求人票の本文をここに貼り付け…"
                 className="w-full resize-y rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-500"
               />
-              <button
-                onClick={handleTextAnalyze}
-                disabled={textAnalyzing || !value.trim()}
-                className="rounded-md bg-slate-800 px-3 py-1.5 text-xs font-medium text-white hover:bg-slate-700 disabled:opacity-50"
-              >
-                {textAnalyzing ? "分析中..." : "この内容を分析する"}
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={handleTextAnalyze}
+                  disabled={textAnalyzing || !value.trim()}
+                  className="rounded-md bg-slate-800 px-3 py-1.5 text-xs font-medium text-white hover:bg-slate-700 disabled:opacity-50"
+                >
+                  {textAnalyzing ? "分析中..." : "この内容を分析する"}
+                </button>
+                {analysis && (
+                  <button
+                    onClick={onResetAnalysis}
+                    className="rounded-md border border-red-200 bg-white px-3 py-1.5 text-xs font-medium text-red-500 hover:bg-red-50"
+                  >
+                    企業情報をリセット
+                  </button>
+                )}
+              </div>
               {textError && (
                 <p className="text-xs text-red-600">{textError}</p>
               )}

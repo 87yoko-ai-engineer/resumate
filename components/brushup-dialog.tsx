@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { BRUSHUP_FIELDS } from "@/lib/resume-schema";
 import type { BrushupField, ResumeData } from "@/lib/resume-schema";
+import { authHeaders } from "@/lib/llm-client";
 
 interface BrushupDialogProps {
   field: BrushupField;
@@ -32,7 +33,7 @@ export default function BrushupDialog({
     try {
       const res = await fetch("/api/brushup", {
         method: "POST",
-        headers: { "content-type": "application/json" },
+        headers: { "content-type": "application/json", ...authHeaders() },
         body: JSON.stringify({ field, originalText, resume, jobPosting }),
       });
       const data = await res.json();
