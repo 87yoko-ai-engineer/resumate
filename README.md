@@ -4,7 +4,7 @@
 
 「自分には大した経験なんてない」——そう思っていても、応募先が求めることに沿ってプロのアドバイザーと話すと、実は評価される経験をたくさんしていた、ということがよくあります。ResuMate は、その“棚卸し対話”をAIが担い、職務経歴・自己PR・志望動機をぐっとリッチにします。
 
-![ResuMate 全体画面](docs/screenshots/overview.png)
+![ResuMate 全体画面](docs/screenshots/01-overview.png)
 
 ---
 
@@ -12,7 +12,7 @@
 
 応募先に合わせて、AIがあなたの強みを“質問”で掘り起こします。これが ResuMate の中心となる体験です。
 
-![求人分析と志望動機・自己PRのお手本](docs/screenshots/analysis.png)
+![求人分析と志望動機・自己PRのお手本](docs/screenshots/04-analysis-result.png)
 
 **使い方の流れ**
 
@@ -20,7 +20,7 @@
 2. **AIが会社を分析** — その企業が**求める人物像・求める経験**をAIが読み解き、参考になる**志望動機・自己PRのお手本**まで提示します。
 3. **AIインタビューを受ける** — **「AIにヒアリングを始めてもらう」**を押すと、分析結果に基づき、キャリアアドバイザーのようにAIが質問。答えていくだけで、**職務経歴・自己PR・志望動機**が書類に反映されていきます。
 
-![AIがヒアリング項目を用意してインタビュー](docs/screenshots/hearing.png)
+![AIがヒアリング項目を用意してインタビュー](docs/screenshots/05-hearing.png)
 
 > 氏名・学歴などの“形式的に決まっている項目”もAIに指示して埋められますが、そこは手で入力した方が早いので、**黄色の欄はご自身で入力する設計**にしています。AIには「あなたにしか語れない経験」の言語化に集中してもらう、という考え方です。
 
@@ -35,7 +35,19 @@
 - **📄 履歴書 / 職務経歴書の両対応** — タブひとつで切り替え。
 - **🔑 自分のAPIキーで動く（BYOK）** — **Anthropic（Claude）** または **OpenAI（ChatGPT）** を選び、ご自身のAPIキーを入力して利用します。キーは**お使いのブラウザの中だけ**に保存され、運営側のサーバーには保存されません。
 
-![PCで証明写真を撮影](docs/screenshots/photo-capture.png)
+![PCで証明写真を撮影](docs/screenshots/10-photo-capture.png)
+
+---
+
+## 📸 画面ギャラリー
+
+| | |
+| :---: | :---: |
+| ![全体画面](docs/screenshots/01-overview.png)<br>**全体画面** | ![求人票を貼り付け](docs/screenshots/02-job-paste.png)<br>**求人票を貼り付け** |
+| ![分析サマリー](docs/screenshots/03-analysis-summary.png)<br>**求める人材像の分析** | ![分析結果](docs/screenshots/04-analysis-result.png)<br>**志望動機・自己PRのお手本** |
+| ![ヒアリング項目](docs/screenshots/05-hearing.png)<br>**ヒアリング項目とインタビュー開始** | ![分析と全体](docs/screenshots/06-analysis-overview.png)<br>**分析結果と書類** |
+| ![アプリ全体](docs/screenshots/07-app-overview.png)<br>**チャットと履歴書** | ![履歴書フォーム](docs/screenshots/08-resume-form.png)<br>**履歴書フォーム（黄色い欄は自分で入力）** |
+| ![職務経歴書フォーム](docs/screenshots/09-cv-form.png)<br>**職務経歴書フォーム** | ![証明写真撮影](docs/screenshots/10-photo-capture.png)<br>**証明写真をPCで撮影** |
 
 ---
 
