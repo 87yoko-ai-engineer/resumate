@@ -18,7 +18,7 @@ export const MODEL_HEADER = "x-llm-model";
 // 各プロバイダの既定モデル（利用者が選んだプロバイダに応じて使い分ける）
 // ※ 実在するモデルIDを指定すること。存在しないIDだとAnthropic/OpenAIが404を返し、AIが一切応答しない。
 export const DEFAULT_MODELS: Record<Provider, string> = {
-  anthropic: "claude-sonnet-4-5",
+  anthropic: "claude-sonnet-4-6",
   openai: "gpt-4o",
 };
 

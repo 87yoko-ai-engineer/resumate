@@ -30,7 +30,8 @@ export const PROVIDER_LABELS: Record<Provider, string> = {
 /** プロバイダごとの選択肢（キーのアカウントで使えるものを選べるようにする）。 */
 export const MODEL_OPTIONS: Record<Provider, { id: string; label: string }[]> = {
   anthropic: [
-    { id: "claude-sonnet-4-5", label: "Claude Sonnet 4.5（高性能・推奨）" },
+    { id: "claude-sonnet-4-6", label: "Claude Sonnet 4.6（最新・推奨）" },
+    { id: "claude-sonnet-4-5", label: "Claude Sonnet 4.5" },
     { id: "claude-3-7-sonnet-latest", label: "Claude 3.7 Sonnet" },
     { id: "claude-3-5-sonnet-latest", label: "Claude 3.5 Sonnet（広く使える）" },
     { id: "claude-3-5-haiku-latest", label: "Claude 3.5 Haiku（高速・低コスト）" },
@@ -44,7 +45,7 @@ export const MODEL_OPTIONS: Record<Provider, { id: string; label: string }[]> = 
 };
 
 export const DEFAULT_MODEL: Record<Provider, string> = {
-  anthropic: "claude-sonnet-4-5",
+  anthropic: "claude-sonnet-4-6",
   openai: "gpt-4o",
 };
 

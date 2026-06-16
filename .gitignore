@@ -39,6 +39,12 @@ yarn-error.log*
 # claude code (local-only settings)
 .claude/settings.local.json
 
+# local-only capture/test scripts & work-in-progress screenshots (never commit)
+_*.cjs
+_*.mjs
+/docs/screenshots/_*.png
+/docs/screenshots/flow-*.png
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
