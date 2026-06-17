@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import ChatPanel from "@/components/chat-panel";
 import ResumePreview from "@/components/resume-preview";
 import JobPostingInput from "@/components/job-posting-input";
 import BrushupDialog from "@/components/brushup-dialog";
 import ApiKeyDialog from "@/components/api-key-dialog";
+import ResumeInputMethods from "@/components/resume-input-methods";
 import { hasCredentials } from "@/lib/llm-client";
 import {
   DOC_LABELS,
@@ -30,21 +31,26 @@ export default function Home() {
   const [saveFlash, setSaveFlash] = useState(false);
   const [apiKeyOpen, setApiKeyOpen] = useState(false);
   const [apiKeySet, setApiKeySet] = useState(true);
+  const directInputRef = useRef<HTMLDivElement>(null);
 
   // 初回マウント時に localStorage から復元
   useEffect(() => {
-    const saved = loadState();
-    if (saved) {
-      setResume(saved.resume);
-      setJobPosting(saved.jobPosting);
-      setJobAnalysis(saved.jobAnalysis ?? null);
-    }
-    setLoaded(true);
+    const timer = window.setTimeout(() => {
+      const saved = loadState();
+      if (saved) {
+        setResume(saved.resume);
+        setJobPosting(saved.jobPosting);
+        setJobAnalysis(saved.jobAnalysis ?? null);
+      }
+      setLoaded(true);
 
-    // APIキー未設定なら、設定ダイアログを自動で開く
-    const ready = hasCredentials();
-    setApiKeySet(ready);
-    if (!ready) setApiKeyOpen(true);
+      // APIキー未設定なら、設定ダイアログを自動で開く
+      const ready = hasCredentials();
+      setApiKeySet(ready);
+      if (!ready) setApiKeyOpen(true);
+    }, 0);
+
+    return () => window.clearTimeout(timer);
   }, []);
 
   // 変更を localStorage に自動保存（復元完了後のみ）
@@ -76,6 +82,10 @@ export default function Home() {
     setJobPosting("");
     setJobAnalysis(null);
     clearState();
+  }
+
+  function scrollToDirectInput() {
+    directInputRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
   return (
@@ -141,16 +151,16 @@ export default function Home() {
       <div className="flex flex-1 overflow-hidden">
         {/* 左: チャット */}
         <div className="flex w-[380px] shrink-0 flex-col border-r border-slate-200 bg-white print:hidden">
-          <ChatPanel
-              onResumeUpdate={handleResumeUpdate}
-              jobPosting={jobPosting}
-              jobAnalysis={jobAnalysis}
-              hiringTrigger={hiringTrigger}
-              onNeedApiKey={() => setApiKeyOpen(true)}
+           <ChatPanel
+               onResumeUpdate={handleResumeUpdate}
+               jobPosting={jobPosting}
+               jobAnalysis={jobAnalysis}
+               hiringTrigger={hiringTrigger}
+               onNeedApiKey={() => setApiKeyOpen(true)}
             />
         </div>
 
-        {/* 右: プレビュー */}
+        {/* 右: v2 作業フロー */}
         <div className="flex-1 overflow-y-auto p-6 print:overflow-visible print:p-0">
           <div className="mx-auto max-w-[820px] space-y-4 print:max-w-none">
             <JobPostingInput
@@ -162,12 +172,24 @@ export default function Home() {
                 onNeedApiKey={() => setApiKeyOpen(true)}
                 analysis={jobAnalysis}
               />
-            <ResumePreview
-              resume={resume}
-              docType={docType}
-              onChange={setResume}
-              onBrushup={setBrushupField}
+            <ResumeInputMethods
+              onDirectInput={scrollToDirectInput}
+              onStartAdvisor={() => setHiringTrigger((t) => t + 1)}
             />
+            <div ref={directInputRef} className="space-y-2">
+              <div className="rounded-md border border-slate-200 bg-white px-4 py-3 print:hidden">
+                <p className="text-xs font-semibold text-slate-500">直接入力フォーム</p>
+                <p className="text-sm text-slate-700">
+                  手入力で修正しながら、必要な欄だけAIブラッシュアップできます。
+                </p>
+              </div>
+              <ResumePreview
+                resume={resume}
+                docType={docType}
+                onChange={setResume}
+                onBrushup={setBrushupField}
+              />
+            </div>
           </div>
         </div>
       </div>

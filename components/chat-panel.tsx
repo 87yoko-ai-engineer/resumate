@@ -2,8 +2,11 @@
 
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport, lastAssistantMessageIsCompleteWithToolCalls } from "ai";
-import { useEffect, useRef } from "react";
-import type { JobAnalysis, ResumeUpdate } from "@/lib/resume-schema";
+import { useEffect, useMemo, useRef } from "react";
+import type {
+  JobAnalysis,
+  ResumeUpdate,
+} from "@/lib/resume-schema";
 import { authHeaders, hasCredentials } from "@/lib/llm-client";
 import {
   Conversation,
@@ -18,18 +21,15 @@ import {
 
 const STARTER_BASE = `こんにちは！転職活動の書類づくりをお手伝いします。
 
-**① まず右側の黄色い欄に直接入力してください**
-氏名・ふりがな・生年月日・性別・住所・電話番号・メールアドレス
+**① 求人情報を貼り付け（任意）**
+応募先がある場合は、右側の「求人情報を貼り付け」で求人票やURLを分析できます。
 
 ---
 
-**② ヒアリングの開始方法（どちらか一方でOK）**
+**② 履歴書作成**
+画像添付、音声入力、直接入力のどれかで経歴情報を入れてください。
 
-📋 **応募したい求人がある場合**
-→ 右上の「応募先の求人情報」に求人票または求人ページのURLを貼り付けて分析し、**「AIにヒアリングを始めてもらう」ボタン**を押してください。求人に合わせた質問をします。
-
-💬 **求人が決まっていない場合**
-→ 黄色い欄への入力が終わったら、**「始めます」とこのチャットに送ってください**。自己PR・志望動機・職務経歴を一緒に作ります。`;
+その後、私がキャリアアドバイザーとして不足情報を1問ずつ確認し、改善案は承認してから書類に反映します。`;
 
 interface ChatPanelProps {
   onResumeUpdate: (update: ResumeUpdate) => void;
@@ -47,20 +47,11 @@ export default function ChatPanel({
   onNeedApiKey,
 }: ChatPanelProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const jobPostingRef = useRef(jobPosting);
-  const jobAnalysisRef = useRef(jobAnalysis);
   const prevTriggerRef = useRef(0);
 
-  useEffect(() => {
-    jobPostingRef.current = jobPosting;
-  }, [jobPosting]);
-
-  useEffect(() => {
-    jobAnalysisRef.current = jobAnalysis;
-  }, [jobAnalysis]);
-
-  const { messages, sendMessage, status, error, addToolResult } = useChat({
-    transport: new DefaultChatTransport({
+  const transport = useMemo(
+    () =>
+      new DefaultChatTransport({
       api: "/api/chat",
       fetch: async (url: RequestInfo | URL, options?: RequestInit) => {
         const existing = options?.body ? JSON.parse(options.body as string) : {};
@@ -73,12 +64,17 @@ export default function ChatPanel({
           },
           body: JSON.stringify({
             ...existing,
-            jobPosting: jobPostingRef.current,
-            jobAnalysis: jobAnalysisRef.current,
+            jobPosting,
+            jobAnalysis,
           }),
         });
       },
     }),
+    [jobPosting, jobAnalysis],
+  );
+
+  const { messages, sendMessage, status, error, addToolResult } = useChat({
+    transport,
     sendAutomaticallyWhen: lastAssistantMessageIsCompleteWithToolCalls,
     async onToolCall({ toolCall }) {
       if (toolCall.toolName === "updateResumeFields") {

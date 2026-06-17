@@ -104,16 +104,21 @@ export default function JobPostingInput({
   const hasValue = value.trim().length > 0 || analysis !== null;
 
   return (
-    <div className="rounded-md border border-slate-200 bg-amber-50/60 print:hidden">
+    <div className="rounded-md border border-amber-200 bg-amber-50/60 print:hidden">
       <button
         onClick={() => setOpen((o) => !o)}
-        className="flex w-full items-center justify-between px-3 py-2 text-left text-sm font-medium text-slate-700"
+        className="flex w-full items-center justify-between px-4 py-3 text-left text-sm font-medium text-slate-700"
       >
-        <span>
-          📋 応募先の求人情報
+        <span className="flex flex-col gap-1">
+          <span className="text-xs font-semibold text-slate-500">
+            ① 求人情報を貼り付け
+          </span>
+          <span className="text-base font-bold text-slate-900">
+            応募先がある場合は、求人票や募集要項を分析できます
+          </span>
           {hasValue && (
-            <span className="ml-2 text-xs text-emerald-600">
-              {analysis ? "分析済み" : "設定済み"}
+            <span className="text-xs text-emerald-600">
+              {analysis ? "分析済み。AI助言に反映されます" : "入力済み"}
             </span>
           )}
         </span>
@@ -121,7 +126,7 @@ export default function JobPostingInput({
       </button>
 
       {open && (
-        <div className="px-3 pb-3 space-y-3">
+        <div className="space-y-3 px-4 pb-4">
           {/* タブ切替 */}
           <div className="flex rounded-md border border-slate-200 p-0.5 text-xs w-fit">
             <button
@@ -204,8 +209,8 @@ export default function JobPostingInput({
           {tab === "text" && (
             <div className="space-y-2">
               <p className="text-xs text-slate-500">
-                求人票や募集要項を貼り付けると、志望動機などのブラッシュアップが
-                その企業・職種に合わせた内容になります。
+                任意入力です。貼り付けると、AIが企業の求める人材像を踏まえて
+                質問やブラッシュアップを行います。
               </p>
               <textarea
                 value={value}
@@ -311,7 +316,7 @@ export default function JobPostingInput({
                 onClick={onStartHiring}
                 className="w-full rounded-md bg-emerald-600 px-3 py-2 text-sm font-medium text-white hover:bg-emerald-700"
               >
-                🎤 AIにヒアリングを始めてもらう
+                AIに求人分析を踏まえてヒアリングしてもらう
               </button>
             </div>
           )}
