@@ -1,5 +1,13 @@
 "use client";
 
+import {
+  DEFAULT_MODEL,
+  MODEL_OPTIONS,
+  normalizeModel,
+  type ModelOption,
+  type Provider,
+} from "@/lib/llm-models";
+
 /**
  * 利用者の API キー（BYOK）をブラウザ内だけで扱うためのユーティリティ。
  *
@@ -7,7 +15,13 @@
  * - サーバーへはリクエストのたびにヘッダで渡すだけで、サーバー側には保存しない。
  */
 
-export type Provider = "anthropic" | "openai";
+export {
+  DEFAULT_MODEL,
+  MODEL_OPTIONS,
+  normalizeModel,
+  type ModelOption,
+  type Provider,
+} from "@/lib/llm-models";
 
 export const PROVIDER_HEADER = "x-llm-provider";
 export const API_KEY_HEADER = "x-llm-api-key";
@@ -27,28 +41,6 @@ export const PROVIDER_LABELS: Record<Provider, string> = {
   openai: "OpenAI（ChatGPT）",
 };
 
-/** プロバイダごとの選択肢（キーのアカウントで使えるものを選べるようにする）。 */
-export const MODEL_OPTIONS: Record<Provider, { id: string; label: string }[]> = {
-  anthropic: [
-    { id: "claude-sonnet-4-6", label: "Claude Sonnet 4.6（最新・推奨）" },
-    { id: "claude-sonnet-4-5", label: "Claude Sonnet 4.5" },
-    { id: "claude-3-7-sonnet-latest", label: "Claude 3.7 Sonnet" },
-    { id: "claude-3-5-sonnet-latest", label: "Claude 3.5 Sonnet（広く使える）" },
-    { id: "claude-3-5-haiku-latest", label: "Claude 3.5 Haiku（高速・低コスト）" },
-  ],
-  openai: [
-    { id: "gpt-4o", label: "GPT-4o（推奨）" },
-    { id: "gpt-4o-mini", label: "GPT-4o mini（高速・低コスト）" },
-    { id: "gpt-4.1", label: "GPT-4.1" },
-    { id: "gpt-4.1-mini", label: "GPT-4.1 mini（高速・低コスト）" },
-  ],
-};
-
-export const DEFAULT_MODEL: Record<Provider, string> = {
-  anthropic: "claude-sonnet-4-6",
-  openai: "gpt-4o",
-};
-
 /** キー取得先の案内 */
 export const PROVIDER_KEY_URLS: Record<Provider, string> = {
   anthropic: "https://console.anthropic.com/settings/keys",
@@ -66,10 +58,7 @@ export function loadCredentials(): LlmCredentials | null {
       typeof parsed.apiKey === "string" &&
       parsed.apiKey.trim().length > 0
     ) {
-      const model =
-        typeof parsed.model === "string" && parsed.model.trim().length > 0
-          ? parsed.model.trim()
-          : DEFAULT_MODEL[parsed.provider];
+      const model = normalizeModel(parsed.provider, parsed.model);
       return { provider: parsed.provider, apiKey: parsed.apiKey, model };
     }
     return null;
@@ -80,7 +69,14 @@ export function loadCredentials(): LlmCredentials | null {
 
 export function saveCredentials(creds: LlmCredentials): void {
   if (typeof window === "undefined") return;
-  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(creds));
+  window.localStorage.setItem(
+    STORAGE_KEY,
+    JSON.stringify({
+      ...creds,
+      apiKey: creds.apiKey.trim(),
+      model: normalizeModel(creds.provider, creds.model),
+    }),
+  );
 }
 
 export function clearCredentials(): void {

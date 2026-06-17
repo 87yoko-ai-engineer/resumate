@@ -1,6 +1,7 @@
 import { createAnthropic } from "@ai-sdk/anthropic";
 import { createOpenAI } from "@ai-sdk/openai";
 import type { LanguageModel } from "ai";
+import { DEFAULT_MODEL, normalizeModel, type Provider } from "@/lib/llm-models";
 
 /**
  * 利用者が自分で持ち込んだ API キー（BYOK: Bring Your Own Key）を使う方式。
@@ -9,18 +10,9 @@ import type { LanguageModel } from "ai";
  * - Anthropic / OpenAI のどちらかを利用者が選べる。
  */
 
-export type Provider = "anthropic" | "openai";
-
 export const PROVIDER_HEADER = "x-llm-provider";
 export const API_KEY_HEADER = "x-llm-api-key";
 export const MODEL_HEADER = "x-llm-model";
-
-// 各プロバイダの既定モデル（利用者が選んだプロバイダに応じて使い分ける）
-// ※ 実在するモデルIDを指定すること。存在しないIDだとAnthropic/OpenAIが404を返し、AIが一切応答しない。
-export const DEFAULT_MODELS: Record<Provider, string> = {
-  anthropic: "claude-sonnet-4-6",
-  openai: "gpt-4o",
-};
 
 /** API キーが渡されていない／プロバイダ指定が不正なときに投げるエラー。 */
 export class CredentialsError extends Error {}
@@ -46,9 +38,11 @@ function normalizeProvider(value: string | null): Provider {
 export function resolveModelFromRequest(req: Request): ResolvedModel {
   const provider = normalizeProvider(req.headers.get(PROVIDER_HEADER));
   const apiKey = (req.headers.get(API_KEY_HEADER) ?? "").trim();
-  // 利用者が選んだモデルID（未指定なら既定モデル）
-  const modelId =
-    (req.headers.get(MODEL_HEADER) ?? "").trim() || DEFAULT_MODELS[provider];
+  // 保存済みの古いモデルIDが送られてきても、現在の既定モデルへ戻す。
+  const modelId = normalizeModel(
+    provider,
+    req.headers.get(MODEL_HEADER) ?? DEFAULT_MODEL[provider],
+  );
 
   if (!apiKey) {
     throw new CredentialsError(
