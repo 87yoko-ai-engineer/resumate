@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useState, useEffect, useRef } from "react";
+import { useId, useState, useEffect, useRef, useSyncExternalStore } from "react";
 import { Mic, MicOff, Camera, Upload } from "lucide-react";
 import {
   BRUSHUP_FIELDS,
@@ -18,8 +18,23 @@ interface ResumePreviewProps {
   onBrushup: (field: BrushupField) => void;
 }
 
-const TODAY = new Date();
-const TODAY_LABEL = `${TODAY.getFullYear()}年${TODAY.getMonth() + 1}月${TODAY.getDate()}日 現在`;
+// 「現在日付」はクライアントのローカル時刻で表示する。
+// モジュール読み込み時に new Date() で計算すると、サーバー(UTC)とブラウザ(JST)で
+// 日付がずれてハイドレーションエラーになる。useSyncExternalStore を使い、
+// サーバー時は空文字、ハイドレーション後にクライアントの日付へ安全に切り替える。
+const subscribeNoop = () => () => {};
+
+function TodayLabel() {
+  const label = useSyncExternalStore(
+    subscribeNoop,
+    () => {
+      const d = new Date();
+      return `${d.getFullYear()}年${d.getMonth() + 1}月${d.getDate()}日 現在`;
+    },
+    () => "",
+  );
+  return <>{label}</>;
+}
 
 export default function ResumePreview({
   resume,
@@ -64,7 +79,7 @@ function ResumeDoc({
     <div className="space-y-5">
       <div className="flex items-end justify-between">
         <h1 className="text-2xl font-bold tracking-widest">履歴書</h1>
-        <span className="text-xs text-slate-500">{TODAY_LABEL}</span>
+        <span className="text-xs text-slate-500"><TodayLabel /></span>
       </div>
 
       {/* 自己入力エリア：基本情報 */}
@@ -356,7 +371,7 @@ function CvDoc({
       </div>
       <div className="flex justify-end text-sm">
         <span>
-          {TODAY_LABEL}　氏名：
+          <TodayLabel />　氏名：
           <span className="font-semibold">
             {resume.basic.name || "（未入力）"}
           </span>
