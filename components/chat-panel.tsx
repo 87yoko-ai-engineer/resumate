@@ -8,7 +8,8 @@ import {
   lastAssistantMessageIsCompleteWithToolCalls,
   type ToolUIPart,
 } from "ai";
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Mic, MicOff } from "lucide-react";
 import type {
   AdvisorSuggestion,
   JobAnalysis,
@@ -62,6 +63,12 @@ export default function ChatPanel({
 }: ChatPanelProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const prevTriggerRef = useRef(0);
+
+  // チャット欄の音声入力（ブラウザの Web Speech API。Chrome等では音声が認識サービスに送られる）
+  const [recording, setRecording] = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const recognitionRef = useRef<any>(null);
+  const recordBaseRef = useRef("");
 
   // 重要: useChat は最初に作った transport を保持し続け、後から transport を差し替えても使わない
   // （内部で new Chat を一度だけ生成するため）。そのため transport は1回だけ作り（認証ヘッダ付与のみ）、
@@ -156,6 +163,56 @@ export default function ChatPanel({
       output: { approved: false },
     });
   }
+
+  // チャット欄の音声入力をトグルする。
+  function toggleVoice() {
+    if (recording) {
+      recognitionRef.current?.stop();
+      return;
+    }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const SR = (window as any).SpeechRecognition ?? (window as any).webkitSpeechRecognition;
+    if (!SR) {
+      alert(
+        "音声入力はお使いのブラウザに対応していません。\nGoogle Chrome または Microsoft Edge をご利用ください。",
+      );
+      return;
+    }
+    recordBaseRef.current = textareaRef.current?.value ?? "";
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const recognition: any = new SR();
+    recognition.lang = "ja-JP";
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    let finalText = "";
+    recognition.onstart = () => setRecording(true);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    recognition.onresult = (event: any) => {
+      finalText = "";
+      let interimText = "";
+      for (let i = 0; i < event.results.length; i++) {
+        if (event.results[i].isFinal) finalText += event.results[i][0].transcript;
+        else interimText += event.results[i][0].transcript;
+      }
+      const base = recordBaseRef.current;
+      const sep = base && finalText + interimText ? " " : "";
+      if (textareaRef.current) {
+        textareaRef.current.value = base + sep + finalText + interimText;
+      }
+    };
+    recognition.onend = () => {
+      setRecording(false);
+      const base = recordBaseRef.current;
+      const sep = base && finalText ? " " : "";
+      if (textareaRef.current) textareaRef.current.value = base + sep + finalText;
+    };
+    recognition.onerror = () => setRecording(false);
+    recognitionRef.current = recognition;
+    recognition.start();
+  }
+
+  // 画面を離れるときは音声認識を止める
+  useEffect(() => () => recognitionRef.current?.stop(), []);
 
   function submit() {
     const text = textareaRef.current?.value.trim();
@@ -296,24 +353,43 @@ export default function ChatPanel({
       </Conversation>
 
       <div className="border-t border-border p-3 flex flex-col gap-2">
-        <textarea
-          ref={textareaRef}
-          placeholder={
-            pendingApproval
-              ? "上の改善案を承認または却下してから続けてください"
-              : "回答を入力（Enterで送信 / Shift+Enterで改行）"
-          }
-          disabled={inputLocked}
-          onKeyDown={handleKeyDown}
-          className="w-full resize-none rounded-lg border border-input bg-transparent px-3 py-2 text-sm min-h-[72px] max-h-48 focus-visible:outline-none focus-visible:border-ring placeholder:text-muted-foreground disabled:opacity-50"
-        />
+        <div className="relative">
+          <textarea
+            ref={textareaRef}
+            placeholder={
+              recording
+                ? "話してください…"
+                : pendingApproval
+                  ? "上の改善案を承認または却下してから続けてください"
+                  : "回答を入力（Enterで送信 / Shift+Enterで改行）"
+            }
+            disabled={inputLocked}
+            onKeyDown={handleKeyDown}
+            className="w-full resize-none rounded-lg border border-input bg-transparent px-3 py-2 pr-10 text-sm min-h-[72px] max-h-48 focus-visible:outline-none focus-visible:border-ring placeholder:text-muted-foreground disabled:opacity-50"
+          />
+          <button
+            type="button"
+            onClick={toggleVoice}
+            disabled={inputLocked}
+            title={recording ? "音声入力を停止" : "音声入力を開始（日本語）"}
+            className={`absolute right-2 top-2 rounded p-1.5 transition-colors disabled:opacity-40 ${
+              recording
+                ? "animate-pulse text-red-500 hover:text-red-700"
+                : "text-slate-400 hover:text-slate-700"
+            }`}
+          >
+            {recording ? <MicOff className="size-4" /> : <Mic className="size-4" />}
+          </button>
+        </div>
         <div className="flex items-center justify-between">
           <span className="text-xs text-muted-foreground">
-            {pendingApproval
-              ? "改善案の承認待ちです"
-              : busy
-                ? "AIが応答中…"
-                : "Shift+Enterで改行"}
+            {recording
+              ? "音声入力中… 氏名・住所などの個人情報は入れないでください"
+              : pendingApproval
+                ? "改善案の承認待ちです"
+                : busy
+                  ? "AIが応答中…"
+                  : "🎤で音声入力できます（経歴・経験向け）"}
           </span>
           <button
             type="button"
