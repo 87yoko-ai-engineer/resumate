@@ -7,6 +7,7 @@ import JobPostingInput from "@/components/job-posting-input";
 import BrushupDialog from "@/components/brushup-dialog";
 import ApiKeyDialog from "@/components/api-key-dialog";
 import ResumeInputMethods from "@/components/resume-input-methods";
+import DirectInputForm from "@/components/direct-input-form";
 import { hasCredentials } from "@/lib/llm-client";
 import {
   DOC_LABELS,
@@ -31,6 +32,7 @@ export default function Home() {
   const [saveFlash, setSaveFlash] = useState(false);
   const [apiKeyOpen, setApiKeyOpen] = useState(false);
   const [apiKeySet, setApiKeySet] = useState(true);
+  const [directFormOpen, setDirectFormOpen] = useState(false);
   const directInputRef = useRef<HTMLDivElement>(null);
 
   // 初回マウント時に localStorage から復元
@@ -84,7 +86,8 @@ export default function Home() {
     clearState();
   }
 
-  function scrollToDirectInput() {
+  function openDirectForm() {
+    setDirectFormOpen(true);
     directInputRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
@@ -174,14 +177,17 @@ export default function Home() {
                 analysis={jobAnalysis}
               />
             <ResumeInputMethods
-              onDirectInput={scrollToDirectInput}
+              onDirectInput={openDirectForm}
               onStartAdvisor={() => setHiringTrigger((t) => t + 1)}
             />
-            <div ref={directInputRef} className="space-y-2">
+            <div ref={directInputRef} className="space-y-4">
+              {directFormOpen && (
+                <DirectInputForm resume={resume} onChange={setResume} />
+              )}
               <div className="rounded-md border border-slate-200 bg-white px-4 py-3 print:hidden">
-                <p className="text-xs font-semibold text-slate-500">直接入力フォーム</p>
+                <p className="text-xs font-semibold text-slate-500">完成プレビュー（印刷イメージ）</p>
                 <p className="text-sm text-slate-700">
-                  手入力で修正しながら、必要な欄だけAIブラッシュアップできます。
+                  上のフォームの内容がここに反映されます。この欄でも直接編集や、必要な欄だけAIブラッシュアップができます。
                 </p>
               </div>
               <ResumePreview

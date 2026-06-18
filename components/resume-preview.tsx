@@ -981,12 +981,14 @@ const HISTORY_YEARS = Array.from(
 const SELECT_CLASS =
   "rounded border border-transparent bg-transparent px-1 py-0.5 text-sm outline-none hover:border-slate-300 focus:border-slate-500 focus:bg-amber-50/40 print:border-transparent";
 
-function BirthDateSelect({
+export function BirthDateSelect({
   value,
   onChange,
+  selectClassName = SELECT_CLASS,
 }: {
   value: string;
   onChange: (v: string) => void;
+  selectClassName?: string;
 }) {
   const parse = (v: string) => {
     const m = v.match(/(\d{4})年(\d{1,2})月(\d{1,2})日/);
@@ -1014,7 +1016,7 @@ function BirthDateSelect({
       <select
         value={year}
         onChange={(e) => { setYear(e.target.value); commit(e.target.value, month, day); }}
-        className={SELECT_CLASS}
+        className={selectClassName}
       >
         <option value="">年</option>
         {BIRTH_YEARS.map((y) => (
@@ -1024,7 +1026,7 @@ function BirthDateSelect({
       <select
         value={month}
         onChange={(e) => { setMonth(e.target.value); commit(year, e.target.value, day); }}
-        className={SELECT_CLASS}
+        className={selectClassName}
       >
         <option value="">月</option>
         {MONTHS.map((m) => (
@@ -1034,7 +1036,7 @@ function BirthDateSelect({
       <select
         value={day}
         onChange={(e) => { setDay(e.target.value); commit(year, month, e.target.value); }}
-        className={SELECT_CLASS}
+        className={selectClassName}
       >
         <option value="">日</option>
         {DAYS.map((d) => (
@@ -1046,7 +1048,7 @@ function BirthDateSelect({
 }
 
 // 学歴・職歴・資格の「年」プルダウン（再利用可能）。既存値が範囲外でもそのまま表示できるよう補う。
-function YearSelect({
+export function YearSelect({
   value,
   onChange,
   className,
@@ -1073,7 +1075,7 @@ function YearSelect({
 }
 
 // 学歴・職歴・資格の「月」プルダウン（再利用可能）。"04" のような表記も "4" として表示。
-function MonthSelect({
+export function MonthSelect({
   value,
   onChange,
   className,
@@ -1102,12 +1104,14 @@ function MonthSelect({
 
 // 職務経歴の「在籍期間」をプルダウンで選ぶ（開始〜終了。在職中なら「現在」）。
 // データは従来どおり1つの文字列（例: 2020年4月〜2023年3月）として保持する。
-function PeriodSelect({
+export function PeriodSelect({
   value,
   onChange,
+  selectClassName = SELECT_CLASS,
 }: {
   value: string;
   onChange: (v: string) => void;
+  selectClassName?: string;
 }) {
   const parse = (v: string) => {
     const ms = [...v.matchAll(/(\d{4})\s*年\s*(\d{1,2})\s*月/g)];
@@ -1163,12 +1167,12 @@ function PeriodSelect({
       <YearSelect
         value={sy}
         onChange={(v) => { setSy(v); commit(v, sm, ey, em, ongoing); }}
-        className={SELECT_CLASS}
+        className={selectClassName}
       />
       <MonthSelect
         value={sm}
         onChange={(v) => { setSm(v); commit(sy, v, ey, em, ongoing); }}
-        className={SELECT_CLASS}
+        className={selectClassName}
       />
       <span className="px-1">〜</span>
       {ongoing ? (
@@ -1178,12 +1182,12 @@ function PeriodSelect({
           <YearSelect
             value={ey}
             onChange={(v) => { setEy(v); commit(sy, sm, v, em, ongoing); }}
-            className={SELECT_CLASS}
+            className={selectClassName}
           />
           <MonthSelect
             value={em}
             onChange={(v) => { setEm(v); commit(sy, sm, ey, v, ongoing); }}
-            className={SELECT_CLASS}
+            className={selectClassName}
           />
         </>
       )}
