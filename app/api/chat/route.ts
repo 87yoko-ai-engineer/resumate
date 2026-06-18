@@ -8,7 +8,7 @@ import {
 import { buildChatSystemPrompt } from "@/lib/prompts";
 import { resumeUpdateSchema, advisorSuggestionSchema } from "@/lib/resume-schema";
 import { getClientIp, isSameOrigin, rateLimit } from "@/lib/rate-limit";
-import { CredentialsError, resolveModelFromRequest, type ResolvedModel } from "@/lib/llm";
+import { CredentialsError, describeLlmError, resolveModelFromRequest, type ResolvedModel } from "@/lib/llm";
 
 export const maxDuration = 60;
 
@@ -108,5 +108,7 @@ export async function POST(req: Request) {
     },
   });
 
-  return result.toUIMessageStreamResponse();
+  return result.toUIMessageStreamResponse({
+    onError: (error) => describeLlmError(error),
+  });
 }

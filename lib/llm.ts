@@ -1,6 +1,6 @@
 import { createAnthropic } from "@ai-sdk/anthropic";
 import { createOpenAI } from "@ai-sdk/openai";
-import type { LanguageModel } from "ai";
+import { APICallError, type LanguageModel } from "ai";
 import { DEFAULT_MODEL, normalizeModel, type Provider } from "@/lib/llm-models";
 
 /**
@@ -57,4 +57,28 @@ export function resolveModelFromRequest(req: Request): ResolvedModel {
 
   const anthropic = createAnthropic({ apiKey });
   return { model: anthropic(modelId), provider };
+}
+
+/**
+ * AIプロバイダ呼び出しのエラーを、利用者向けの分かりやすい日本語メッセージに変換する。
+ * 「キー/モデルを確認」という総称ではなく、原因（キー無効・モデル非対応・レート制限・混雑）を
+ * 見分けて、取るべき対処まで案内する。
+ */
+export function describeLlmError(error: unknown): string {
+  if (APICallError.isInstance(error)) {
+    const status = error.statusCode;
+    if (status === 401 || status === 403) {
+      return "APIキーが無効か、権限がありません。設定画面で新しいAPIキーを発行して貼り直してください。";
+    }
+    if (status === 404) {
+      return "選んだモデルがこのAPIキーでは使えないようです。設定画面で別のモデルに変えてお試しください。";
+    }
+    if (status === 429) {
+      return "短時間にリクエストが集中しました（レート制限）。1〜2分ほど待ってから再試行してください。";
+    }
+    if (typeof status === "number" && status >= 500) {
+      return "AI提供側が一時的に混み合っています。少し待ってから再試行してください。";
+    }
+  }
+  return "AIの呼び出しに失敗しました。APIキーと、選んだモデルがそのキーで使えるかをご確認のうえ、少し時間をおいて再試行してください。";
 }

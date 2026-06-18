@@ -3,7 +3,7 @@ import { buildBrushupPrompt } from "@/lib/prompts";
 import { BRUSHUP_FIELDS, emptyResume } from "@/lib/resume-schema";
 import type { BrushupField, ResumeData } from "@/lib/resume-schema";
 import { getClientIp, isSameOrigin, rateLimit } from "@/lib/rate-limit";
-import { CredentialsError, resolveModelFromRequest, type ResolvedModel } from "@/lib/llm";
+import { CredentialsError, describeLlmError, resolveModelFromRequest, type ResolvedModel } from "@/lib/llm";
 
 export const maxDuration = 60;
 
@@ -98,14 +98,7 @@ export async function POST(req: Request) {
     });
     return Response.json({ improved: text.trim() });
   } catch (err) {
-    // 内部エラーの詳細はクライアントに返さない
     console.error("brushup error:", err);
-    return Response.json(
-      {
-        error:
-          "ブラッシュアップの生成に失敗しました。APIキーと、選んだモデルがそのキーで使えるかをご確認のうえ、時間をおいて再試行してください。",
-      },
-      { status: 500 },
-    );
+    return Response.json({ error: describeLlmError(err) }, { status: 502 });
   }
 }
