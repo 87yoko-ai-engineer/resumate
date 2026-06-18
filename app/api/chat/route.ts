@@ -101,7 +101,7 @@ export async function POST(req: Request) {
       }),
       proposeImprovement: tool({
         description:
-          "自己PR・志望動機・職務要約・スキル欄の改善案を、本人の承認を得るために提示する。これら4項目は必ずこのツールで提案し、updateResumeFields では直接書き換えない。承認・反映は画面側で本人が行う。",
+          "職務要約・自己PRの改善案を、本人の承認を得るために提示する。この2項目は必ずこのツールで提案し、updateResumeFields では直接書き換えない。承認・反映は画面側で本人が行う。",
         inputSchema: advisorSuggestionSchema,
         // execute を持たないクライアントサイドツール。承認UIで本人が承認/却下する。
       }),

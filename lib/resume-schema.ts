@@ -156,12 +156,11 @@ export const BRUSHUP_FIELDS = {
 
 export type BrushupField = keyof typeof BRUSHUP_FIELDS;
 
-// AIキャリアアドバイザーが「改善案」を提示する対象フィールド（本人の承認後に反映する）
+// AIキャリアアドバイザーが「改善案」を提示する対象フィールド（本人の承認後に反映する）。
+// ヒアリングのゴールはこの2項目（職務要約・自己PR）を必ずブラッシュアップすること。
 export const ADVISOR_FIELDS = {
-  selfPR: "自己PR",
-  motivation: "志望動機",
   careerSummary: "職務要約",
-  skills: "スキル欄",
+  selfPR: "自己PR",
 } as const;
 
 export type AdvisorField = keyof typeof ADVISOR_FIELDS;
@@ -177,10 +176,8 @@ export interface AdvisorSuggestion {
 // proposeImprovement ツールの入力スキーマ
 export const advisorSuggestionSchema = z.object({
   targetField: z
-    .enum(["selfPR", "motivation", "careerSummary", "skills"])
-    .describe(
-      "改善対象のフィールド。selfPR=自己PR / motivation=志望動機 / careerSummary=職務要約 / skills=スキル欄",
-    ),
+    .enum(["careerSummary", "selfPR"])
+    .describe("改善対象のフィールド。careerSummary=職務要約 / selfPR=自己PR"),
   originalText: z
     .string()
     .describe("本人が現在書いている元の文章。新規作成で元がない場合は空文字。"),

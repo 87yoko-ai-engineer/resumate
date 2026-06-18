@@ -63,34 +63,34 @@ export default function ChatPanel({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const prevTriggerRef = useRef(0);
 
-  // AIへ送るのは buildApplicantProfile が返すキャリア情報のみ（氏名・住所などの個人情報は含めない）。
-  // 文字列が変わったとき＝キャリア内容が変わったときだけ transport を作り直す。
-  const applicantProfile = buildApplicantProfile(resume);
-
+  // 重要: useChat は最初に作った transport を保持し続け、後から transport を差し替えても使わない
+  // （内部で new Chat を一度だけ生成するため）。そのため transport は1回だけ作り（認証ヘッダ付与のみ）、
+  // 求人・履歴書などの最新データは送信のたびに sendMessage の body で渡す（buildRequestBody）。
   const transport = useMemo(
     () =>
       new DefaultChatTransport({
-      api: "/api/chat",
-      fetch: async (url: RequestInfo | URL, options?: RequestInit) => {
-        const existing = options?.body ? JSON.parse(options.body as string) : {};
-        return fetch(url, {
-          ...options,
-          headers: {
-            ...(options?.headers as Record<string, string> | undefined),
-            "content-type": "application/json",
-            ...authHeaders(),
-          },
-          body: JSON.stringify({
-            ...existing,
-            jobPosting,
-            jobAnalysis,
-            applicantProfile,
+        api: "/api/chat",
+        fetch: (url: RequestInfo | URL, options?: RequestInit) =>
+          fetch(url, {
+            ...options,
+            headers: {
+              ...(options?.headers as Record<string, string> | undefined),
+              "content-type": "application/json",
+              ...authHeaders(),
+            },
           }),
-        });
-      },
-    }),
-    [jobPosting, jobAnalysis, applicantProfile],
+      }),
+    [],
   );
+
+  // 送信のたびに付ける最新データ。AIへ渡すのはキャリア情報のみ（氏名・住所などの個人情報は含めない）。
+  function buildRequestBody() {
+    return {
+      jobPosting,
+      jobAnalysis,
+      applicantProfile: buildApplicantProfile(resume),
+    };
+  }
 
   const { messages, sendMessage, status, error, addToolResult } = useChat({
     transport,
@@ -115,9 +115,13 @@ export default function ChatPanel({
         onNeedApiKey();
         return;
       }
-      sendMessage({ text: "[__HIRING_START__] ヒアリングを開始してください。" });
+      sendMessage(
+        { text: "[__HIRING_START__] ヒアリングを開始してください。" },
+        { body: buildRequestBody() },
+      );
     }
-  }, [hiringTrigger, sendMessage, onNeedApiKey]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hiringTrigger, sendMessage, onNeedApiKey, jobPosting, jobAnalysis, resume]);
 
   const busy = status === "submitted" || status === "streaming";
 
@@ -160,7 +164,7 @@ export default function ChatPanel({
       onNeedApiKey();
       return;
     }
-    sendMessage({ text });
+    sendMessage({ text }, { body: buildRequestBody() });
     if (textareaRef.current) textareaRef.current.value = "";
   }
 
@@ -213,7 +217,9 @@ export default function ChatPanel({
                   className="flex justify-center"
                 >
                   <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-3 py-1 text-xs font-medium text-emerald-700">
-                    求人分析に基づくヒアリングを開始しました
+                    {jobAnalysis
+                      ? "求人分析と経歴を踏まえたヒアリングを開始しました"
+                      : "経歴を踏まえたヒアリングを開始しました"}
                   </span>
                 </div>
               );

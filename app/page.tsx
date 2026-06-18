@@ -172,13 +172,13 @@ export default function Home() {
                 onChange={setJobPosting}
                 onAnalysis={(a) => setJobAnalysis(a)}
                 onResetAnalysis={() => { setJobAnalysis(null); setJobPosting(""); }}
-                onStartHiring={() => setHiringTrigger((t) => t + 1)}
                 onNeedApiKey={() => setApiKeyOpen(true)}
                 analysis={jobAnalysis}
               />
             <ResumeInputMethods
               onDirectInput={openDirectForm}
               onStartAdvisor={() => setHiringTrigger((t) => t + 1)}
+              hasJobAnalysis={jobAnalysis !== null}
             />
             <div ref={directInputRef} className="space-y-4">
               {directFormOpen && (

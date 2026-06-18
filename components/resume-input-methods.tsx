@@ -6,29 +6,27 @@ import { FileUp, Keyboard, Mic, Sparkles } from "lucide-react";
 interface ResumeInputMethodsProps {
   onDirectInput: () => void;
   onStartAdvisor: () => void;
+  hasJobAnalysis: boolean;
 }
 
 export default function ResumeInputMethods({
   onDirectInput,
   onStartAdvisor,
+  hasJobAnalysis,
 }: ResumeInputMethodsProps) {
+  const advisorLabel = hasJobAnalysis
+    ? "求人分析内容と応募者の経歴を踏まえたAIのヒアリングを開始する"
+    : "応募者の経歴を踏まえたヒアリングを開始する";
+  const advisorHint = hasJobAnalysis
+    ? "求人分析の結果とあなたの履歴書を照らし合わせて、AIが魅力を引き出す質問をします。"
+    : "あなたの履歴書をもとに、AIが魅力を引き出す質問をします。（①に求人を貼ると、求人と照合します）";
   return (
     <section className="space-y-3 rounded-md border border-slate-200 bg-white p-4 print:hidden">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <p className="text-xs font-semibold text-slate-500">② 履歴書作成</p>
-          <h2 className="text-lg font-bold text-slate-900">
-            入力方法を選んで、履歴書情報を整えます
-          </h2>
-        </div>
-        <button
-          type="button"
-          onClick={onStartAdvisor}
-          className="inline-flex items-center gap-1.5 rounded-md bg-emerald-600 px-3 py-2 text-xs font-semibold text-white hover:bg-emerald-700"
-        >
-          <Sparkles className="size-4" />
-          AIに棚卸しを始めてもらう
-        </button>
+      <div>
+        <p className="text-xs font-semibold text-slate-500">② 履歴書作成</p>
+        <h2 className="text-lg font-bold text-slate-900">
+          入力方法を選んで、履歴書情報を整えます
+        </h2>
       </div>
 
       <div className="grid gap-3 md:grid-cols-3">
@@ -56,6 +54,18 @@ export default function ResumeInputMethods({
           status="写真撮影・AIブラッシュアップも既存どおり利用可能"
           onAction={onDirectInput}
         />
+      </div>
+
+      <div className="space-y-1 border-t border-slate-100 pt-3">
+        <button
+          type="button"
+          onClick={onStartAdvisor}
+          className="flex w-full items-center justify-center gap-1.5 rounded-md bg-emerald-600 px-4 py-3 text-sm font-semibold text-white hover:bg-emerald-700"
+        >
+          <Sparkles className="size-4 shrink-0" />
+          {advisorLabel}
+        </button>
+        <p className="text-center text-xs text-slate-500">{advisorHint}</p>
       </div>
     </section>
   );

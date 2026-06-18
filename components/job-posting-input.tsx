@@ -9,7 +9,6 @@ interface JobPostingInputProps {
   onChange: (value: string) => void;
   onAnalysis: (analysis: JobAnalysis) => void;
   onResetAnalysis: () => void;
-  onStartHiring: () => void;
   onNeedApiKey: () => void;
   analysis: JobAnalysis | null;
 }
@@ -22,7 +21,6 @@ export default function JobPostingInput({
   onChange,
   onAnalysis,
   onResetAnalysis,
-  onStartHiring,
   onNeedApiKey,
   analysis,
 }: JobPostingInputProps) {
@@ -300,7 +298,7 @@ export default function JobPostingInput({
               {/* ヒアリング項目 */}
               <div className="rounded-md bg-slate-50 border border-slate-200 px-3 py-2">
                 <p className="text-xs font-semibold text-slate-700 mb-2">
-                  ヒアリング項目
+                  （参考）求人から想定される確認ポイント
                 </p>
                 <ol className="space-y-1 list-decimal list-inside">
                   {analysis.questions.map((q, i) => (
@@ -311,13 +309,10 @@ export default function JobPostingInput({
                 </ol>
               </div>
 
-              {/* ヒアリング開始ボタン */}
-              <button
-                onClick={onStartHiring}
-                className="w-full rounded-md bg-emerald-600 px-3 py-2 text-sm font-medium text-white hover:bg-emerald-700"
-              >
-                AIに求人分析を踏まえてヒアリングしてもらう
-              </button>
+              {/* ヒアリングは「②履歴書作成」のボタンから、経歴と照合して開始する */}
+              <p className="rounded-md bg-emerald-50 px-3 py-2 text-xs text-emerald-700">
+                この分析結果は、下の「②履歴書作成」の<strong>「求人分析内容と応募者の経歴を踏まえたAIのヒアリングを開始する」</strong>ボタンで、あなたの履歴書と照合して使われます。
+              </p>
             </div>
           )}
         </div>
