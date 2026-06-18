@@ -82,6 +82,10 @@ export default function ApiKeyDialog({
             ) : null}
             入力したキーは<strong>あなたのブラウザの中だけ</strong>に保存され、
             運営側のサーバーには保存されません。
+            <br />
+            AIに送るのは職歴・スキルなどの<strong>キャリア情報だけ</strong>です。
+            氏名・住所・電話・生年月日などの<strong>個人情報はAIに送りません</strong>。
+            履歴書の内容もこのブラウザ内にのみ保存されます。
           </div>
 
           {/* プロバイダ選択 */}

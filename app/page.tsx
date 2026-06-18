@@ -153,6 +153,7 @@ export default function Home() {
         <div className="flex w-[380px] shrink-0 flex-col border-r border-slate-200 bg-white print:hidden">
            <ChatPanel
                onResumeUpdate={handleResumeUpdate}
+               resume={resume}
                jobPosting={jobPosting}
                jobAnalysis={jobAnalysis}
                hiringTrigger={hiringTrigger}

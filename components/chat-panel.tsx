@@ -1,13 +1,25 @@
 "use client";
 
 import { useChat } from "@ai-sdk/react";
-import { DefaultChatTransport, lastAssistantMessageIsCompleteWithToolCalls } from "ai";
+import {
+  DefaultChatTransport,
+  getToolName,
+  isToolUIPart,
+  lastAssistantMessageIsCompleteWithToolCalls,
+  type ToolUIPart,
+} from "ai";
 import { useEffect, useMemo, useRef } from "react";
 import type {
+  AdvisorSuggestion,
   JobAnalysis,
+  ResumeData,
   ResumeUpdate,
 } from "@/lib/resume-schema";
+import { buildApplicantProfile } from "@/lib/resume-schema";
 import { authHeaders, hasCredentials } from "@/lib/llm-client";
+import SuggestionApproval, {
+  type SuggestionState,
+} from "@/components/suggestion-approval";
 import {
   Conversation,
   ConversationContent,
@@ -33,6 +45,7 @@ const STARTER_BASE = `こんにちは！転職活動の書類づくりをお手�
 
 interface ChatPanelProps {
   onResumeUpdate: (update: ResumeUpdate) => void;
+  resume: ResumeData;
   jobPosting: string;
   jobAnalysis: JobAnalysis | null;
   hiringTrigger: number;
@@ -41,6 +54,7 @@ interface ChatPanelProps {
 
 export default function ChatPanel({
   onResumeUpdate,
+  resume,
   jobPosting,
   jobAnalysis,
   hiringTrigger,
@@ -48,6 +62,10 @@ export default function ChatPanel({
 }: ChatPanelProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const prevTriggerRef = useRef(0);
+
+  // AIへ送るのは buildApplicantProfile が返すキャリア情報のみ（氏名・住所などの個人情報は含めない）。
+  // 文字列が変わったとき＝キャリア内容が変わったときだけ transport を作り直す。
+  const applicantProfile = buildApplicantProfile(resume);
 
   const transport = useMemo(
     () =>
@@ -66,11 +84,12 @@ export default function ChatPanel({
             ...existing,
             jobPosting,
             jobAnalysis,
+            applicantProfile,
           }),
         });
       },
     }),
-    [jobPosting, jobAnalysis],
+    [jobPosting, jobAnalysis, applicantProfile],
   );
 
   const { messages, sendMessage, status, error, addToolResult } = useChat({
@@ -102,9 +121,41 @@ export default function ChatPanel({
 
   const busy = status === "submitted" || status === "streaming";
 
+  // 承認待ちの改善提案があるか（あれば、先に承認/却下してもらうため入力を一旦ロックする）
+  const pendingApproval = messages.some((m) =>
+    m.parts.some(
+      (p) =>
+        isToolUIPart(p) &&
+        getToolName(p) === "proposeImprovement" &&
+        (p.state === "input-available" || p.state === "input-streaming"),
+    ),
+  );
+  const inputLocked = busy || pendingApproval;
+
+  // AIの改善提案を承認 → その項目だけ履歴書に反映し、ツール結果を返して会話を継続させる。
+  function approveSuggestion(toolCallId: string, suggestion: AdvisorSuggestion) {
+    onResumeUpdate({
+      [suggestion.targetField]: suggestion.suggestedText,
+    } as ResumeUpdate);
+    addToolResult({
+      tool: "proposeImprovement",
+      toolCallId,
+      output: { approved: true, field: suggestion.targetField },
+    });
+  }
+
+  // AIの改善提案を却下 → 履歴書は変更せず、却下の結果だけ返す。
+  function rejectSuggestion(toolCallId: string) {
+    addToolResult({
+      tool: "proposeImprovement",
+      toolCallId,
+      output: { approved: false },
+    });
+  }
+
   function submit() {
     const text = textareaRef.current?.value.trim();
-    if (!text || busy) return;
+    if (!text || inputLocked) return;
     if (!hasCredentials()) {
       onNeedApiKey();
       return;
@@ -145,6 +196,11 @@ export default function ChatPanel({
             const reflected = m.parts.some(
               (p) => p.type === "tool-updateResumeFields",
             );
+            // AIの改善提案（承認待ち／承認済み／却下）
+            const proposals = m.parts.filter(
+              (p) =>
+                isToolUIPart(p) && getToolName(p) === "proposeImprovement",
+            ) as ToolUIPart[];
 
             // ヒアリング開始メッセージを通知チップとして表示
             if (
@@ -163,18 +219,60 @@ export default function ChatPanel({
               );
             }
 
-            if (!text && !reflected) return null;
+            const hasBubble = !!text || (reflected && m.role === "assistant");
+            if (!hasBubble && proposals.length === 0) return null;
+
             return (
-              <Message from={m.role} key={m.id}>
-                <MessageContent>
-                  {text && <MessageResponse>{text}</MessageResponse>}
-                  {reflected && m.role === "assistant" && (
-                    <p className="text-xs font-medium text-emerald-600">
-                      ✓ 書類に内容を反映しました
-                    </p>
-                  )}
-                </MessageContent>
-              </Message>
+              <div key={m.id} className="flex flex-col gap-2">
+                {hasBubble && (
+                  <Message from={m.role}>
+                    <MessageContent>
+                      {text && <MessageResponse>{text}</MessageResponse>}
+                      {reflected && m.role === "assistant" && (
+                        <p className="text-xs font-medium text-emerald-600">
+                          ✓ 書類に内容を反映しました
+                        </p>
+                      )}
+                    </MessageContent>
+                  </Message>
+                )}
+
+                {proposals.map((part) => {
+                  if (part.state === "input-streaming") {
+                    return (
+                      <div
+                        key={part.toolCallId}
+                        className="rounded-md border border-emerald-100 bg-emerald-50/50 px-3 py-2 text-xs text-emerald-600"
+                      >
+                        AIが改善案を作成中…
+                      </div>
+                    );
+                  }
+                  const suggestion = part.input as AdvisorSuggestion | undefined;
+                  if (!suggestion) return null;
+                  let suggestionState: SuggestionState = "pending";
+                  if (part.state === "output-available") {
+                    const out = part.output as { approved?: boolean } | undefined;
+                    suggestionState = out?.approved ? "approved" : "rejected";
+                  } else if (
+                    part.state === "output-error" ||
+                    part.state === "output-denied"
+                  ) {
+                    suggestionState = "rejected";
+                  }
+                  return (
+                    <SuggestionApproval
+                      key={part.toolCallId}
+                      suggestion={suggestion}
+                      state={suggestionState}
+                      onApprove={() =>
+                        approveSuggestion(part.toolCallId, suggestion)
+                      }
+                      onReject={() => rejectSuggestion(part.toolCallId)}
+                    />
+                  );
+                })}
+              </div>
             );
           })}
 
@@ -193,19 +291,27 @@ export default function ChatPanel({
       <div className="border-t border-border p-3 flex flex-col gap-2">
         <textarea
           ref={textareaRef}
-          placeholder="回答を入力（Enterで送信 / Shift+Enterで改行）"
-          disabled={busy}
+          placeholder={
+            pendingApproval
+              ? "上の改善案を承認または却下してから続けてください"
+              : "回答を入力（Enterで送信 / Shift+Enterで改行）"
+          }
+          disabled={inputLocked}
           onKeyDown={handleKeyDown}
           className="w-full resize-none rounded-lg border border-input bg-transparent px-3 py-2 text-sm min-h-[72px] max-h-48 focus-visible:outline-none focus-visible:border-ring placeholder:text-muted-foreground disabled:opacity-50"
         />
         <div className="flex items-center justify-between">
           <span className="text-xs text-muted-foreground">
-            {busy ? "AIが応答中…" : "Shift+Enterで改行"}
+            {pendingApproval
+              ? "改善案の承認待ちです"
+              : busy
+                ? "AIが応答中…"
+                : "Shift+Enterで改行"}
           </span>
           <button
             type="button"
             onClick={submit}
-            disabled={busy}
+            disabled={inputLocked}
             className="rounded-md bg-slate-800 px-3 py-1.5 text-xs font-medium text-white hover:bg-slate-700 disabled:opacity-50"
           >
             送信
