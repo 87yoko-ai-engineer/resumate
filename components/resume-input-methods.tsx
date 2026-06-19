@@ -33,9 +33,10 @@ export default function ResumeInputMethods({
         <InputMethodCard
           icon={<FileUp className="size-5" />}
           title="画像添付"
-          description="写真、スクショ、PDFから履歴書情報を読み取る入口です。読み取り機能は次フェーズで接続します。"
+          description="過去の履歴書・職務経歴書の画像やPDFから、学歴・職歴だけをAIが読み取ってフォームに転記します。読み取った内容は、反映前にご自身で確認・修正できます。"
+          notice="氏名・住所・生年月日・電話・メール・顔写真の欄は写さないでください（その箇所を紙などで隠した状態で撮影してください）。画像はあなたご自身のAPIキーでAIに送られます。"
           actionLabel="次フェーズで対応"
-          status="このPhaseでは見え方だけ整理"
+          status="実装は次フェーズ。いまは見え方だけ整えています"
           disabled
         />
         <InputMethodCard
@@ -75,6 +76,7 @@ function InputMethodCard({
   icon,
   title,
   description,
+  notice,
   actionLabel,
   status,
   disabled = false,
@@ -83,6 +85,7 @@ function InputMethodCard({
   icon: ReactNode;
   title: string;
   description: string;
+  notice?: string;
   actionLabel: string;
   status: string;
   disabled?: boolean;
@@ -99,6 +102,14 @@ function InputMethodCard({
       <p className="min-h-[48px] text-xs leading-relaxed text-slate-600">
         {description}
       </p>
+      {notice ? (
+        <p className="mt-3 flex gap-1.5 rounded-md border border-amber-200 bg-amber-50 px-2.5 py-2 text-[11px] leading-relaxed text-amber-800">
+          <span aria-hidden className="shrink-0">
+            ⚠️
+          </span>
+          <span>{notice}</span>
+        </p>
+      ) : null}
       <p className="mt-3 text-[11px] leading-relaxed text-slate-500">{status}</p>
       <button
         type="button"
