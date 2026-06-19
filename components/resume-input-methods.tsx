@@ -1,7 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { FileUp, Keyboard, Mic, Sparkles } from "lucide-react";
+import { FileUp, Keyboard, Sparkles } from "lucide-react";
 
 interface ResumeInputMethodsProps {
   onDirectInput: () => void;
@@ -29,7 +29,7 @@ export default function ResumeInputMethods({
         </h2>
       </div>
 
-      <div className="grid gap-3 md:grid-cols-3">
+      <div className="grid gap-3 md:grid-cols-2">
         <InputMethodCard
           icon={<FileUp className="size-5" />}
           title="画像添付"
@@ -37,15 +37,6 @@ export default function ResumeInputMethods({
           notice="氏名・住所・生年月日・電話・メール・顔写真の欄は写さないでください（その箇所を紙などで隠した状態で撮影してください）。画像はあなたご自身のAPIキーでAIに送られます。"
           actionLabel="次フェーズで対応"
           status="実装は次フェーズ。いまは見え方だけ整えています"
-          disabled
-        />
-        <InputMethodCard
-          icon={<Mic className="size-5" />}
-          title="音声入力"
-          description="質問シート形式で話して入力する入口です。音声入力の本実装は後続Phaseで行います。"
-          notice="氏名・住所・電話・メールなどの個人情報は話さないでください。音声入力を使うと、話した音声がブラウザの音声認識サービス（Google Chromeの場合はGoogle）に送られます。"
-          actionLabel="次フェーズで対応"
-          status="既存フォーム内の音声入力は維持"
           disabled
         />
         <InputMethodCard
