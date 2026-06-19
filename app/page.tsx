@@ -8,6 +8,7 @@ import BrushupDialog from "@/components/brushup-dialog";
 import ApiKeyDialog from "@/components/api-key-dialog";
 import ResumeInputMethods from "@/components/resume-input-methods";
 import DirectInputForm from "@/components/direct-input-form";
+import UsageNotice from "@/components/usage-notice";
 import { hasCredentials } from "@/lib/llm-client";
 import {
   DOC_LABELS,
@@ -167,6 +168,7 @@ export default function Home() {
         {/* 右: v2 作業フロー */}
         <div className="flex-1 overflow-y-auto p-6 print:overflow-visible print:p-0">
           <div className="mx-auto max-w-[820px] space-y-4 print:max-w-none">
+            <UsageNotice />
             <JobPostingInput
                 value={jobPosting}
                 onChange={setJobPosting}
