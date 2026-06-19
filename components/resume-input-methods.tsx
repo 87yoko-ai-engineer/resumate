@@ -43,6 +43,7 @@ export default function ResumeInputMethods({
           icon={<Mic className="size-5" />}
           title="音声入力"
           description="質問シート形式で話して入力する入口です。音声入力の本実装は後続Phaseで行います。"
+          notice="氏名・住所・電話・メールなどの個人情報は話さないでください。音声入力を使うと、話した音声がブラウザの音声認識サービス（Google Chromeの場合はGoogle）に送られます。"
           actionLabel="次フェーズで対応"
           status="既存フォーム内の音声入力は維持"
           disabled
