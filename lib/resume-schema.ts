@@ -228,6 +228,65 @@ export function mergeUpdate(current: ResumeData, update: ResumeUpdate): ResumeDa
   return next;
 }
 
+// 画像OCRで読み取る対象のスキーマ。
+// プライバシー保護のため、読み取るのは「学歴・職歴・職務経歴」のキャリア情報のみ。
+// 氏名・住所・生年月日・電話・メール・顔写真などの個人情報は対象に含めない。
+export const ocrExtractionSchema = z.object({
+  education: z
+    .array(
+      z.object({
+        year: z.string().describe("入学・卒業の西暦4桁。読み取れなければ空文字"),
+        month: z.string().describe("月（数字のみ）。読み取れなければ空文字"),
+        description: z.string().describe("学校名・学部学科・入学/卒業などの記述"),
+      }),
+    )
+    .describe("学歴。画像から読み取れた全件。なければ空配列"),
+  workHistory: z
+    .array(
+      z.object({
+        year: z.string().describe("入社・退社の西暦4桁。読み取れなければ空文字"),
+        month: z.string().describe("月（数字のみ）。読み取れなければ空文字"),
+        description: z.string().describe("会社名・入社/退社などの履歴書用の簡潔な記述"),
+      }),
+    )
+    .describe("履歴書の職歴欄。画像から読み取れた全件。なければ空配列"),
+  careers: z
+    .array(
+      z.object({
+        company: z.string().describe("会社名"),
+        period: z.string().describe("在籍期間 例: 2020年4月〜2023年3月"),
+        role: z.string().describe("役職・担当業務の見出し"),
+        description: z.string().describe("具体的な業務内容・実績"),
+      }),
+    )
+    .describe("職務経歴書の詳細な職務経歴。画像から読み取れた全件。なければ空配列"),
+});
+
+export type OcrExtraction = z.infer<typeof ocrExtractionSchema>;
+
+// OCRで読み取った（本人が確認・修正済みの）内容を、既存の履歴書データに「追記」する。
+// 既存の学歴・職歴・職務経歴は消さずに後ろへ足す。
+export function appendOcrExtraction(
+  current: ResumeData,
+  ocr: OcrExtraction,
+): ResumeData {
+  return {
+    ...current,
+    education: [
+      ...current.education,
+      ...ocr.education.map((e) => ({ id: uid(), ...e })),
+    ],
+    workHistory: [
+      ...current.workHistory,
+      ...ocr.workHistory.map((w) => ({ id: uid(), ...w })),
+    ],
+    careers: [
+      ...current.careers,
+      ...ocr.careers.map((c) => ({ id: uid(), ...c })),
+    ],
+  };
+}
+
 export function newId(): string {
   return uid();
 }

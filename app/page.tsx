@@ -11,12 +11,14 @@ import DirectInputForm from "@/components/direct-input-form";
 import UsageNotice from "@/components/usage-notice";
 import { hasCredentials } from "@/lib/llm-client";
 import {
+  appendOcrExtraction,
   DOC_LABELS,
   emptyResume,
   mergeUpdate,
   type BrushupField,
   type DocType,
   type JobAnalysis,
+  type OcrExtraction,
   type ResumeData,
   type ResumeUpdate,
 } from "@/lib/resume-schema";
@@ -90,6 +92,13 @@ export default function Home() {
   function openDirectForm() {
     setDirectFormOpen(true);
     directInputRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  // 画像OCRで読み取り、本人が確認・修正した内容を、既存の学歴・職歴・職務経歴へ追記する。
+  // 反映後は直接入力フォームを開いて、結果がすぐ見えるようにする。
+  function handleApplyOcr(extraction: OcrExtraction) {
+    setResume((prev) => appendOcrExtraction(prev, extraction));
+    openDirectForm();
   }
 
   return (
@@ -181,6 +190,8 @@ export default function Home() {
               onDirectInput={openDirectForm}
               onStartAdvisor={() => setHiringTrigger((t) => t + 1)}
               hasJobAnalysis={jobAnalysis !== null}
+              onApplyOcr={handleApplyOcr}
+              onNeedApiKey={() => setApiKeyOpen(true)}
             />
             <div ref={directInputRef} className="space-y-4">
               {directFormOpen && (
