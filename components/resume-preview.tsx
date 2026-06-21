@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useState, useEffect, useRef } from "react";
+import { useId, useState, useEffect, useRef, useSyncExternalStore } from "react";
 import { Mic, MicOff, Camera, Upload } from "lucide-react";
 import {
   BRUSHUP_FIELDS,
@@ -18,8 +18,23 @@ interface ResumePreviewProps {
   onBrushup: (field: BrushupField) => void;
 }
 
-const TODAY = new Date();
-const TODAY_LABEL = `${TODAY.getFullYear()}年${TODAY.getMonth() + 1}月${TODAY.getDate()}日 現在`;
+// 「現在日付」はクライアントのローカル時刻で表示する。
+// モジュール読み込み時に new Date() で計算すると、サーバー(UTC)とブラウザ(JST)で
+// 日付がずれてハイドレーションエラーになる。useSyncExternalStore を使い、
+// サーバー時は空文字、ハイドレーション後にクライアントの日付へ安全に切り替える。
+const subscribeNoop = () => () => {};
+
+function TodayLabel() {
+  const label = useSyncExternalStore(
+    subscribeNoop,
+    () => {
+      const d = new Date();
+      return `${d.getFullYear()}年${d.getMonth() + 1}月${d.getDate()}日 現在`;
+    },
+    () => "",
+  );
+  return <>{label}</>;
+}
 
 export default function ResumePreview({
   resume,
@@ -64,17 +79,11 @@ function ResumeDoc({
     <div className="space-y-5">
       <div className="flex items-end justify-between">
         <h1 className="text-2xl font-bold tracking-widest">履歴書</h1>
-        <span className="text-xs text-slate-500">{TODAY_LABEL}</span>
+        <span className="text-xs text-slate-500"><TodayLabel /></span>
       </div>
 
       {/* 自己入力エリア：基本情報 */}
-      <div className="space-y-3 rounded-lg bg-yellow-50 p-3 print:rounded-none print:bg-transparent print:p-0">
-        {/* 基本情報 入力案内 */}
-        <div className="flex items-center gap-2 rounded-md border border-yellow-300 bg-yellow-100 px-3 py-2 text-xs text-yellow-800 print:hidden">
-          <span>✏️</span>
-          <span><strong>黄色の欄はご自身で入力してください。</strong>氏名・生年月日・住所・連絡先・免許資格が対象です。職歴・学歴・自己PRはチャットで話すと自動で反映されます。</span>
-        </div>
-
+      <div className="space-y-3 rounded-lg p-3 print:rounded-none print:p-0">
         {/* 氏名・生年月日 ＋ 写真 */}
         <div className="flex items-stretch gap-3">
           <table className="min-w-0 flex-1 border border-slate-400 text-sm">
@@ -166,7 +175,7 @@ function ResumeDoc({
           <thead>
             <tr>
               <Th className="w-16">年</Th>
-              <Th className="w-12">月</Th>
+              <Th className="w-16">月</Th>
               <Th>学歴・職歴</Th>
               <th className="w-8 border border-slate-400 bg-slate-50 print:hidden" />
             </tr>
@@ -251,13 +260,13 @@ function ResumeDoc({
       </Section>
 
       {/* 自己入力エリア：免許・資格 */}
-      <div className="rounded-lg bg-yellow-50 p-3 print:rounded-none print:bg-transparent print:p-0">
+      <div className="rounded-lg p-3 print:rounded-none print:p-0">
         <Section title="免許・資格">
         <table className="w-full border border-slate-400 text-sm">
           <thead>
             <tr>
               <Th className="w-16">年</Th>
-              <Th className="w-12">月</Th>
+              <Th className="w-16">月</Th>
               <Th>免許・資格</Th>
               <th className="w-8 border border-slate-400 bg-slate-50 print:hidden" />
             </tr>
@@ -356,7 +365,7 @@ function CvDoc({
       </div>
       <div className="flex justify-end text-sm">
         <span>
-          {TODAY_LABEL}　氏名：
+          <TodayLabel />　氏名：
           <span className="font-semibold">
             {resume.basic.name || "（未入力）"}
           </span>
@@ -406,7 +415,7 @@ function CvDoc({
                 </button>
               </div>
               <div className="mb-1">
-                <Line
+                <PeriodSelect
                   value={c.period}
                   onChange={(v) =>
                     update({
@@ -415,8 +424,6 @@ function CvDoc({
                       ),
                     })
                   }
-                  placeholder="在籍期間 例：2020年4月〜2023年3月"
-                  className="text-xs text-slate-600"
                 />
               </div>
               <div className="mb-1">
@@ -603,18 +610,10 @@ function DateRow({
   return (
     <tr>
       <Td>
-        <Line
-          value={year}
-          onChange={(v) => onChange({ year: v })}
-          placeholder="2020"
-        />
+        <YearSelect value={year} onChange={(v) => onChange({ year: v })} />
       </Td>
       <Td>
-        <Line
-          value={month}
-          onChange={(v) => onChange({ month: v })}
-          placeholder="4"
-        />
+        <MonthSelect value={month} onChange={(v) => onChange({ month: v })} />
       </Td>
       <Td>
         <Line
@@ -973,16 +972,23 @@ const BIRTH_YEARS = Array.from(
 );
 const MONTHS = Array.from({ length: 12 }, (_, i) => i + 1);
 const DAYS = Array.from({ length: 31 }, (_, i) => i + 1);
+// 学歴・職歴・資格の「年」リスト（卒業見込み等で翌年も選べるよう +1 まで）。誕生年(BIRTH_YEARS)とは別。
+const HISTORY_YEARS = Array.from(
+  { length: CURRENT_YEAR + 1 - 1950 + 1 },
+  (_, i) => CURRENT_YEAR + 1 - i,
+);
 
 const SELECT_CLASS =
   "rounded border border-transparent bg-transparent px-1 py-0.5 text-sm outline-none hover:border-slate-300 focus:border-slate-500 focus:bg-amber-50/40 print:border-transparent";
 
-function BirthDateSelect({
+export function BirthDateSelect({
   value,
   onChange,
+  selectClassName = SELECT_CLASS,
 }: {
   value: string;
   onChange: (v: string) => void;
+  selectClassName?: string;
 }) {
   const parse = (v: string) => {
     const m = v.match(/(\d{4})年(\d{1,2})月(\d{1,2})日/);
@@ -1010,7 +1016,7 @@ function BirthDateSelect({
       <select
         value={year}
         onChange={(e) => { setYear(e.target.value); commit(e.target.value, month, day); }}
-        className={SELECT_CLASS}
+        className={selectClassName}
       >
         <option value="">年</option>
         {BIRTH_YEARS.map((y) => (
@@ -1020,7 +1026,7 @@ function BirthDateSelect({
       <select
         value={month}
         onChange={(e) => { setMonth(e.target.value); commit(year, e.target.value, day); }}
-        className={SELECT_CLASS}
+        className={selectClassName}
       >
         <option value="">月</option>
         {MONTHS.map((m) => (
@@ -1030,13 +1036,169 @@ function BirthDateSelect({
       <select
         value={day}
         onChange={(e) => { setDay(e.target.value); commit(year, month, e.target.value); }}
-        className={SELECT_CLASS}
+        className={selectClassName}
       >
         <option value="">日</option>
         {DAYS.map((d) => (
           <option key={d} value={String(d)}>{d}日</option>
         ))}
       </select>
+    </div>
+  );
+}
+
+// 学歴・職歴・資格の「年」プルダウン（再利用可能）。既存値が範囲外でもそのまま表示できるよう補う。
+export function YearSelect({
+  value,
+  onChange,
+  className,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  className?: string;
+}) {
+  const v = value.trim();
+  const inList = HISTORY_YEARS.some((y) => String(y) === v);
+  return (
+    <select
+      value={v}
+      onChange={(e) => onChange(e.target.value)}
+      className={className ?? `${SELECT_CLASS} w-full`}
+    >
+      <option value="">年</option>
+      {v && !inList && <option value={v}>{v}</option>}
+      {HISTORY_YEARS.map((y) => (
+        <option key={y} value={String(y)}>{y}</option>
+      ))}
+    </select>
+  );
+}
+
+// 学歴・職歴・資格の「月」プルダウン（再利用可能）。"04" のような表記も "4" として表示。
+export function MonthSelect({
+  value,
+  onChange,
+  className,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  className?: string;
+}) {
+  const raw = value.trim();
+  const norm = /^\d{1,2}$/.test(raw) ? String(parseInt(raw, 10)) : raw;
+  const inList = MONTHS.some((m) => String(m) === norm);
+  return (
+    <select
+      value={norm}
+      onChange={(e) => onChange(e.target.value)}
+      className={className ?? `${SELECT_CLASS} w-full`}
+    >
+      <option value="">月</option>
+      {norm && !inList && <option value={norm}>{norm}</option>}
+      {MONTHS.map((m) => (
+        <option key={m} value={String(m)}>{m}</option>
+      ))}
+    </select>
+  );
+}
+
+// 職務経歴の「在籍期間」をプルダウンで選ぶ（開始〜終了。在職中なら「現在」）。
+// データは従来どおり1つの文字列（例: 2020年4月〜2023年3月）として保持する。
+export function PeriodSelect({
+  value,
+  onChange,
+  selectClassName = SELECT_CLASS,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  selectClassName?: string;
+}) {
+  const parse = (v: string) => {
+    const ms = [...v.matchAll(/(\d{4})\s*年\s*(\d{1,2})\s*月/g)];
+    const ongoing = /現在|在職/.test(v);
+    return {
+      sy: ms[0]?.[1] ?? "",
+      sm: ms[0]?.[2] ?? "",
+      ey: ongoing ? "" : ms[1]?.[1] ?? "",
+      em: ongoing ? "" : ms[1]?.[2] ?? "",
+      ongoing,
+    };
+  };
+  const init = parse(value);
+  const [sy, setSy] = useState(init.sy);
+  const [sm, setSm] = useState(init.sm);
+  const [ey, setEy] = useState(init.ey);
+  const [em, setEm] = useState(init.em);
+  const [ongoing, setOngoing] = useState(init.ongoing);
+  const prevRef = useRef(value);
+  useEffect(() => {
+    if (value !== prevRef.current) {
+      prevRef.current = value;
+      const p = parse(value);
+      setSy(p.sy);
+      setSm(p.sm);
+      setEy(p.ey);
+      setEm(p.em);
+      setOngoing(p.ongoing);
+    }
+  }, [value]);
+
+  const commit = (
+    nsy: string,
+    nsm: string,
+    ney: string,
+    nem: string,
+    nOngoing: boolean,
+  ) => {
+    const start = nsy && nsm ? `${nsy}年${parseInt(nsm, 10)}月` : "";
+    let out: string;
+    if (nOngoing) {
+      out = start ? `${start}〜現在` : "";
+    } else {
+      const end = ney && nem ? `${ney}年${parseInt(nem, 10)}月` : "";
+      out = start && end ? `${start}〜${end}` : start ? `${start}〜` : "";
+    }
+    prevRef.current = out;
+    onChange(out);
+  };
+
+  return (
+    <div className="flex flex-wrap items-center gap-0.5 text-xs text-slate-600">
+      <YearSelect
+        value={sy}
+        onChange={(v) => { setSy(v); commit(v, sm, ey, em, ongoing); }}
+        className={selectClassName}
+      />
+      <MonthSelect
+        value={sm}
+        onChange={(v) => { setSm(v); commit(sy, v, ey, em, ongoing); }}
+        className={selectClassName}
+      />
+      <span className="px-1">〜</span>
+      {ongoing ? (
+        <span className="font-medium text-slate-700">現在</span>
+      ) : (
+        <>
+          <YearSelect
+            value={ey}
+            onChange={(v) => { setEy(v); commit(sy, sm, v, em, ongoing); }}
+            className={selectClassName}
+          />
+          <MonthSelect
+            value={em}
+            onChange={(v) => { setEm(v); commit(sy, sm, ey, v, ongoing); }}
+            className={selectClassName}
+          />
+        </>
+      )}
+      <label className="ml-2 inline-flex items-center gap-1 print:hidden">
+        <input
+          type="checkbox"
+          checked={ongoing}
+          onChange={(e) => { setOngoing(e.target.checked); commit(sy, sm, ey, em, e.target.checked); }}
+        />
+        現在（在職中）
+      </label>
     </div>
   );
 }

@@ -156,6 +156,41 @@ export const BRUSHUP_FIELDS = {
 
 export type BrushupField = keyof typeof BRUSHUP_FIELDS;
 
+// AIキャリアアドバイザーが「改善案」を提示する対象フィールド（本人の承認後に反映する）。
+// ヒアリングのゴールはこの2項目（職務要約・自己PR）を必ずブラッシュアップすること。
+export const ADVISOR_FIELDS = {
+  careerSummary: "職務要約",
+  selfPR: "自己PR",
+} as const;
+
+export type AdvisorField = keyof typeof ADVISOR_FIELDS;
+
+// AIの改善提案。承認されるまで履歴書データには反映しない。
+export interface AdvisorSuggestion {
+  targetField: AdvisorField;
+  originalText: string;
+  suggestedText: string;
+  reason: string;
+}
+
+// proposeImprovement ツールの入力スキーマ
+export const advisorSuggestionSchema = z.object({
+  targetField: z
+    .enum(["careerSummary", "selfPR"])
+    .describe("改善対象のフィールド。careerSummary=職務要約 / selfPR=自己PR"),
+  originalText: z
+    .string()
+    .describe("本人が現在書いている元の文章。新規作成で元がない場合は空文字。"),
+  suggestedText: z
+    .string()
+    .describe("改善後の文章案。本人が話した事実だけを使い、作り話や誇張をしない。"),
+  reason: z
+    .string()
+    .describe("なぜこの案が良いのかの短い理由（1〜2文）。"),
+});
+
+export type AdvisorSuggestionInput = z.infer<typeof advisorSuggestionSchema>;
+
 export interface JobAnalysis {
   companyName: string;
   requirements: string;
@@ -193,6 +228,101 @@ export function mergeUpdate(current: ResumeData, update: ResumeUpdate): ResumeDa
   return next;
 }
 
+// 画像OCRで読み取る対象のスキーマ。
+// プライバシー保護のため、読み取るのは「学歴・職歴・職務経歴」のキャリア情報のみ。
+// 氏名・住所・生年月日・電話・メール・顔写真などの個人情報は対象に含めない。
+export const ocrExtractionSchema = z.object({
+  education: z
+    .array(
+      z.object({
+        year: z.string().describe("入学・卒業の西暦4桁。読み取れなければ空文字"),
+        month: z.string().describe("月（数字のみ）。読み取れなければ空文字"),
+        description: z.string().describe("学校名・学部学科・入学/卒業などの記述"),
+      }),
+    )
+    .describe("学歴。画像から読み取れた全件。なければ空配列"),
+  workHistory: z
+    .array(
+      z.object({
+        year: z.string().describe("入社・退社の西暦4桁。読み取れなければ空文字"),
+        month: z.string().describe("月（数字のみ）。読み取れなければ空文字"),
+        description: z.string().describe("会社名・入社/退社などの履歴書用の簡潔な記述"),
+      }),
+    )
+    .describe("履歴書の職歴欄。画像から読み取れた全件。なければ空配列"),
+  careers: z
+    .array(
+      z.object({
+        company: z.string().describe("会社名"),
+        period: z.string().describe("在籍期間 例: 2020年4月〜2023年3月"),
+        role: z.string().describe("役職・担当業務の見出し"),
+        description: z.string().describe("具体的な業務内容・実績"),
+      }),
+    )
+    .describe("職務経歴書の詳細な職務経歴。画像から読み取れた全件。なければ空配列"),
+});
+
+export type OcrExtraction = z.infer<typeof ocrExtractionSchema>;
+
+// OCRで読み取った（本人が確認・修正済みの）内容を、既存の履歴書データに「追記」する。
+// 既存の学歴・職歴・職務経歴は消さずに後ろへ足す。
+export function appendOcrExtraction(
+  current: ResumeData,
+  ocr: OcrExtraction,
+): ResumeData {
+  return {
+    ...current,
+    education: [
+      ...current.education,
+      ...ocr.education.map((e) => ({ id: uid(), ...e })),
+    ],
+    workHistory: [
+      ...current.workHistory,
+      ...ocr.workHistory.map((w) => ({ id: uid(), ...w })),
+    ],
+    careers: [
+      ...current.careers,
+      ...ocr.careers.map((c) => ({ id: uid(), ...c })),
+    ],
+  };
+}
+
 export function newId(): string {
   return uid();
+}
+
+// AIキャリアアドバイザーに渡す「応募者プロフィール」を組み立てる。
+// プライバシー保護のため、氏名・ふりがな・生年月日・性別・住所・電話・メール・写真などの
+// 個人情報は一切含めず、キャリアに関わる情報だけをまとめる。
+export function buildApplicantProfile(resume: ResumeData): string {
+  const lines: string[] = [];
+  if (resume.education.length > 0) {
+    lines.push("【学歴】");
+    for (const e of resume.education) {
+      lines.push(`- ${e.year}年${e.month}月 ${e.description}`.trim());
+    }
+  }
+  if (resume.workHistory.length > 0) {
+    lines.push("【職歴（履歴書）】");
+    for (const w of resume.workHistory) {
+      lines.push(`- ${w.year}年${w.month}月 ${w.description}`.trim());
+    }
+  }
+  if (resume.licenses.length > 0) {
+    lines.push("【免許・資格】");
+    for (const l of resume.licenses) {
+      lines.push(`- ${l.year}年${l.month}月 ${l.name}`.trim());
+    }
+  }
+  if (resume.careers.length > 0) {
+    lines.push("【職務経歴（職務経歴書）】");
+    for (const c of resume.careers) {
+      lines.push(`- ${c.company}／${c.period}／${c.role}：${c.description}`.trim());
+    }
+  }
+  if (resume.careerSummary.trim()) lines.push(`【職務要約】${resume.careerSummary}`);
+  if (resume.skills.trim()) lines.push(`【スキル】${resume.skills}`);
+  if (resume.selfPR.trim()) lines.push(`【自己PR（現状）】${resume.selfPR}`);
+  if (resume.motivation.trim()) lines.push(`【志望動機（現状）】${resume.motivation}`);
+  return lines.join("\n");
 }

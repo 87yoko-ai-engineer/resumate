@@ -1,19 +1,24 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import ChatPanel from "@/components/chat-panel";
 import ResumePreview from "@/components/resume-preview";
 import JobPostingInput from "@/components/job-posting-input";
 import BrushupDialog from "@/components/brushup-dialog";
 import ApiKeyDialog from "@/components/api-key-dialog";
+import ResumeInputMethods from "@/components/resume-input-methods";
+import DirectInputForm from "@/components/direct-input-form";
+import UsageNotice from "@/components/usage-notice";
 import { hasCredentials } from "@/lib/llm-client";
 import {
+  appendOcrExtraction,
   DOC_LABELS,
   emptyResume,
   mergeUpdate,
   type BrushupField,
   type DocType,
   type JobAnalysis,
+  type OcrExtraction,
   type ResumeData,
   type ResumeUpdate,
 } from "@/lib/resume-schema";
@@ -30,21 +35,27 @@ export default function Home() {
   const [saveFlash, setSaveFlash] = useState(false);
   const [apiKeyOpen, setApiKeyOpen] = useState(false);
   const [apiKeySet, setApiKeySet] = useState(true);
+  const [directFormOpen, setDirectFormOpen] = useState(false);
+  const directInputRef = useRef<HTMLDivElement>(null);
 
   // 初回マウント時に localStorage から復元
   useEffect(() => {
-    const saved = loadState();
-    if (saved) {
-      setResume(saved.resume);
-      setJobPosting(saved.jobPosting);
-      setJobAnalysis(saved.jobAnalysis ?? null);
-    }
-    setLoaded(true);
+    const timer = window.setTimeout(() => {
+      const saved = loadState();
+      if (saved) {
+        setResume(saved.resume);
+        setJobPosting(saved.jobPosting);
+        setJobAnalysis(saved.jobAnalysis ?? null);
+      }
+      setLoaded(true);
 
-    // APIキー未設定なら、設定ダイアログを自動で開く
-    const ready = hasCredentials();
-    setApiKeySet(ready);
-    if (!ready) setApiKeyOpen(true);
+      // APIキー未設定なら、設定ダイアログを自動で開く
+      const ready = hasCredentials();
+      setApiKeySet(ready);
+      if (!ready) setApiKeyOpen(true);
+    }, 0);
+
+    return () => window.clearTimeout(timer);
   }, []);
 
   // 変更を localStorage に自動保存（復元完了後のみ）
@@ -76,6 +87,18 @@ export default function Home() {
     setJobPosting("");
     setJobAnalysis(null);
     clearState();
+  }
+
+  function openDirectForm() {
+    setDirectFormOpen(true);
+    directInputRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  // 画像OCRで読み取り、本人が確認・修正した内容を、既存の学歴・職歴・職務経歴へ追記する。
+  // 反映後は直接入力フォームを開いて、結果がすぐ見えるようにする。
+  function handleApplyOcr(extraction: OcrExtraction) {
+    setResume((prev) => appendOcrExtraction(prev, extraction));
+    openDirectForm();
   }
 
   return (
@@ -141,33 +164,53 @@ export default function Home() {
       <div className="flex flex-1 overflow-hidden">
         {/* 左: チャット */}
         <div className="flex w-[380px] shrink-0 flex-col border-r border-slate-200 bg-white print:hidden">
-          <ChatPanel
-              onResumeUpdate={handleResumeUpdate}
-              jobPosting={jobPosting}
-              jobAnalysis={jobAnalysis}
-              hiringTrigger={hiringTrigger}
-              onNeedApiKey={() => setApiKeyOpen(true)}
+           <ChatPanel
+               onResumeUpdate={handleResumeUpdate}
+               resume={resume}
+               jobPosting={jobPosting}
+               jobAnalysis={jobAnalysis}
+               hiringTrigger={hiringTrigger}
+               onNeedApiKey={() => setApiKeyOpen(true)}
             />
         </div>
 
-        {/* 右: プレビュー */}
+        {/* 右: v2 作業フロー */}
         <div className="flex-1 overflow-y-auto p-6 print:overflow-visible print:p-0">
           <div className="mx-auto max-w-[820px] space-y-4 print:max-w-none">
+            <UsageNotice />
             <JobPostingInput
                 value={jobPosting}
                 onChange={setJobPosting}
                 onAnalysis={(a) => setJobAnalysis(a)}
                 onResetAnalysis={() => { setJobAnalysis(null); setJobPosting(""); }}
-                onStartHiring={() => setHiringTrigger((t) => t + 1)}
                 onNeedApiKey={() => setApiKeyOpen(true)}
+                onStartAdvisor={() => setHiringTrigger((t) => t + 1)}
                 analysis={jobAnalysis}
               />
-            <ResumePreview
-              resume={resume}
-              docType={docType}
-              onChange={setResume}
-              onBrushup={setBrushupField}
+            <ResumeInputMethods
+              onDirectInput={openDirectForm}
+              onStartAdvisor={() => setHiringTrigger((t) => t + 1)}
+              hasJobAnalysis={jobAnalysis !== null}
+              onApplyOcr={handleApplyOcr}
+              onNeedApiKey={() => setApiKeyOpen(true)}
             />
+            <div ref={directInputRef} className="space-y-4">
+              {directFormOpen && (
+                <DirectInputForm resume={resume} onChange={setResume} />
+              )}
+              <div className="rounded-md border border-slate-200 bg-white px-4 py-3 print:hidden">
+                <p className="text-xs font-semibold text-slate-500">完成プレビュー（印刷イメージ）</p>
+                <p className="text-sm text-slate-700">
+                  上のフォームの内容がここに反映されます。この欄でも直接編集や、必要な欄だけAIブラッシュアップができます。
+                </p>
+              </div>
+              <ResumePreview
+                resume={resume}
+                docType={docType}
+                onChange={setResume}
+                onBrushup={setBrushupField}
+              />
+            </div>
           </div>
         </div>
       </div>

@@ -6,9 +6,9 @@ import {
   type UIMessage,
 } from "ai";
 import { buildChatSystemPrompt } from "@/lib/prompts";
-import { resumeUpdateSchema } from "@/lib/resume-schema";
+import { resumeUpdateSchema, advisorSuggestionSchema } from "@/lib/resume-schema";
 import { getClientIp, isSameOrigin, rateLimit } from "@/lib/rate-limit";
-import { CredentialsError, resolveModelFromRequest, type ResolvedModel } from "@/lib/llm";
+import { CredentialsError, describeLlmError, resolveModelFromRequest, type ResolvedModel } from "@/lib/llm";
 
 export const maxDuration = 60;
 
@@ -59,15 +59,18 @@ export async function POST(req: Request) {
   let messages: UIMessage[];
   let jobPosting: string;
   let jobAnalysis: { companyName: string; requirements: string; questions: string[] } | null;
+  let applicantProfile: string;
   try {
     const parsed = JSON.parse(raw) as {
       messages?: UIMessage[];
       jobPosting?: string;
       jobAnalysis?: { companyName: string; requirements: string; questions: string[] } | null;
+      applicantProfile?: string;
     };
     messages = parsed.messages ?? [];
     jobPosting = parsed.jobPosting ?? "";
     jobAnalysis = parsed.jobAnalysis ?? null;
+    applicantProfile = parsed.applicantProfile ?? "";
   } catch {
     return errorJson("リクエストの形式が不正です。", 400);
   }
@@ -84,7 +87,7 @@ export async function POST(req: Request) {
 
   const result = streamText({
     model: resolved.model,
-    system: buildChatSystemPrompt(jobPosting, jobAnalysis),
+    system: buildChatSystemPrompt(jobPosting, jobAnalysis, applicantProfile),
     messages: modelMessages,
     stopWhen: stepCountIs(5),
     // 1リクエストあたりのコストを一定範囲に固定
@@ -92,12 +95,20 @@ export async function POST(req: Request) {
     tools: {
       updateResumeFields: tool({
         description:
-          "ユーザーの回答から判明した履歴書・職務経歴書の情報を反映する。新しい情報が分かるたびに呼び出す。",
+          "ユーザーの回答から判明した履歴書・職務経歴書の『事実』（学歴・職歴・資格・基本情報・職務経歴）を反映する。自己PR・志望動機・職務要約・スキル欄はここでは扱わない。",
         inputSchema: resumeUpdateSchema,
         // execute を持たないクライアントサイドツール。結果は画面側で処理する。
+      }),
+      proposeImprovement: tool({
+        description:
+          "職務要約・自己PRの改善案を、本人の承認を得るために提示する。この2項目は必ずこのツールで提案し、updateResumeFields では直接書き換えない。承認・反映は画面側で本人が行う。",
+        inputSchema: advisorSuggestionSchema,
+        // execute を持たないクライアントサイドツール。承認UIで本人が承認/却下する。
       }),
     },
   });
 
-  return result.toUIMessageStreamResponse();
+  return result.toUIMessageStreamResponse({
+    onError: (error) => describeLlmError(error),
+  });
 }

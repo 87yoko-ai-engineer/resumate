@@ -1,10 +1,26 @@
 "use client";
 
 import { useChat } from "@ai-sdk/react";
-import { DefaultChatTransport, lastAssistantMessageIsCompleteWithToolCalls } from "ai";
-import { useEffect, useRef } from "react";
-import type { JobAnalysis, ResumeUpdate } from "@/lib/resume-schema";
+import {
+  DefaultChatTransport,
+  getToolName,
+  isToolUIPart,
+  lastAssistantMessageIsCompleteWithToolCalls,
+  type ToolUIPart,
+} from "ai";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Mic, MicOff } from "lucide-react";
+import type {
+  AdvisorSuggestion,
+  JobAnalysis,
+  ResumeData,
+  ResumeUpdate,
+} from "@/lib/resume-schema";
+import { buildApplicantProfile } from "@/lib/resume-schema";
 import { authHeaders, hasCredentials } from "@/lib/llm-client";
+import SuggestionApproval, {
+  type SuggestionState,
+} from "@/components/suggestion-approval";
 import {
   Conversation,
   ConversationContent,
@@ -18,21 +34,19 @@ import {
 
 const STARTER_BASE = `こんにちは！転職活動の書類づくりをお手伝いします。
 
-**① まず右側の黄色い欄に直接入力してください**
-氏名・ふりがな・生年月日・性別・住所・電話番号・メールアドレス
+**① 求人情報を貼り付け（任意）**
+応募先がある場合は、右側の「求人情報を貼り付け」で求人票やURLを分析できます。
 
 ---
 
-**② ヒアリングの開始方法（どちらか一方でOK）**
+**② 履歴書作成**
+画像添付、直接入力または「AIアシスタント」のいずれかで経歴情報を入れてください。
 
-📋 **応募したい求人がある場合**
-→ 右上の「応募先の求人情報」に求人票または求人ページのURLを貼り付けて分析し、**「AIにヒアリングを始めてもらう」ボタン**を押してください。求人に合わせた質問をします。
-
-💬 **求人が決まっていない場合**
-→ 黄色い欄への入力が終わったら、**「始めます」とこのチャットに送ってください**。自己PR・志望動機・職務経歴を一緒に作ります。`;
+その後、私がキャリアアドバイザーとして不足情報を1問ずつ確認し、改善案は承認してから書類に反映します。`;
 
 interface ChatPanelProps {
   onResumeUpdate: (update: ResumeUpdate) => void;
+  resume: ResumeData;
   jobPosting: string;
   jobAnalysis: JobAnalysis | null;
   hiringTrigger: number;
@@ -41,44 +55,52 @@ interface ChatPanelProps {
 
 export default function ChatPanel({
   onResumeUpdate,
+  resume,
   jobPosting,
   jobAnalysis,
   hiringTrigger,
   onNeedApiKey,
 }: ChatPanelProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const jobPostingRef = useRef(jobPosting);
-  const jobAnalysisRef = useRef(jobAnalysis);
   const prevTriggerRef = useRef(0);
 
-  useEffect(() => {
-    jobPostingRef.current = jobPosting;
-  }, [jobPosting]);
+  // チャット欄の音声入力（ブラウザの Web Speech API。Chrome等では音声が認識サービスに送られる）
+  const [recording, setRecording] = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const recognitionRef = useRef<any>(null);
+  const recordBaseRef = useRef("");
 
-  useEffect(() => {
-    jobAnalysisRef.current = jobAnalysis;
-  }, [jobAnalysis]);
+  // 重要: useChat は最初に作った transport を保持し続け、後から transport を差し替えても使わない
+  // （内部で new Chat を一度だけ生成するため）。そのため transport は1回だけ作り（認証ヘッダ付与のみ）、
+  // 求人・履歴書などの最新データは送信のたびに sendMessage の body で渡す（buildRequestBody）。
+  const transport = useMemo(
+    () =>
+      new DefaultChatTransport({
+        api: "/api/chat",
+        fetch: (url: RequestInfo | URL, options?: RequestInit) =>
+          fetch(url, {
+            ...options,
+            headers: {
+              ...(options?.headers as Record<string, string> | undefined),
+              "content-type": "application/json",
+              ...authHeaders(),
+            },
+          }),
+      }),
+    [],
+  );
+
+  // 送信のたびに付ける最新データ。AIへ渡すのはキャリア情報のみ（氏名・住所などの個人情報は含めない）。
+  function buildRequestBody() {
+    return {
+      jobPosting,
+      jobAnalysis,
+      applicantProfile: buildApplicantProfile(resume),
+    };
+  }
 
   const { messages, sendMessage, status, error, addToolResult } = useChat({
-    transport: new DefaultChatTransport({
-      api: "/api/chat",
-      fetch: async (url: RequestInfo | URL, options?: RequestInit) => {
-        const existing = options?.body ? JSON.parse(options.body as string) : {};
-        return fetch(url, {
-          ...options,
-          headers: {
-            ...(options?.headers as Record<string, string> | undefined),
-            "content-type": "application/json",
-            ...authHeaders(),
-          },
-          body: JSON.stringify({
-            ...existing,
-            jobPosting: jobPostingRef.current,
-            jobAnalysis: jobAnalysisRef.current,
-          }),
-        });
-      },
-    }),
+    transport,
     sendAutomaticallyWhen: lastAssistantMessageIsCompleteWithToolCalls,
     async onToolCall({ toolCall }) {
       if (toolCall.toolName === "updateResumeFields") {
@@ -100,20 +122,109 @@ export default function ChatPanel({
         onNeedApiKey();
         return;
       }
-      sendMessage({ text: "[__HIRING_START__] ヒアリングを開始してください。" });
+      sendMessage(
+        { text: "[__HIRING_START__] ヒアリングを開始してください。" },
+        { body: buildRequestBody() },
+      );
     }
-  }, [hiringTrigger, sendMessage, onNeedApiKey]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hiringTrigger, sendMessage, onNeedApiKey, jobPosting, jobAnalysis, resume]);
 
   const busy = status === "submitted" || status === "streaming";
 
+  // 履歴書（キャリア情報）が入力済みか。ヒアリング開始チップの文言に使う。
+  const hasProfile = buildApplicantProfile(resume).trim().length > 0;
+
+  // 承認待ちの改善提案があるか（あれば、先に承認/却下してもらうため入力を一旦ロックする）
+  const pendingApproval = messages.some((m) =>
+    m.parts.some(
+      (p) =>
+        isToolUIPart(p) &&
+        getToolName(p) === "proposeImprovement" &&
+        (p.state === "input-available" || p.state === "input-streaming"),
+    ),
+  );
+  const inputLocked = busy || pendingApproval;
+
+  // AIの改善提案を承認 → その項目だけ履歴書に反映し、ツール結果を返して会話を継続させる。
+  function approveSuggestion(toolCallId: string, suggestion: AdvisorSuggestion) {
+    onResumeUpdate({
+      [suggestion.targetField]: suggestion.suggestedText,
+    } as ResumeUpdate);
+    addToolResult({
+      tool: "proposeImprovement",
+      toolCallId,
+      output: { approved: true, field: suggestion.targetField },
+    });
+  }
+
+  // AIの改善提案を却下 → 履歴書は変更せず、却下の結果だけ返す。
+  function rejectSuggestion(toolCallId: string) {
+    addToolResult({
+      tool: "proposeImprovement",
+      toolCallId,
+      output: { approved: false },
+    });
+  }
+
+  // チャット欄の音声入力をトグルする。
+  function toggleVoice() {
+    if (recording) {
+      recognitionRef.current?.stop();
+      return;
+    }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const SR = (window as any).SpeechRecognition ?? (window as any).webkitSpeechRecognition;
+    if (!SR) {
+      alert(
+        "音声入力はお使いのブラウザに対応していません。\nGoogle Chrome または Microsoft Edge をご利用ください。",
+      );
+      return;
+    }
+    recordBaseRef.current = textareaRef.current?.value ?? "";
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const recognition: any = new SR();
+    recognition.lang = "ja-JP";
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    let finalText = "";
+    recognition.onstart = () => setRecording(true);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    recognition.onresult = (event: any) => {
+      finalText = "";
+      let interimText = "";
+      for (let i = 0; i < event.results.length; i++) {
+        if (event.results[i].isFinal) finalText += event.results[i][0].transcript;
+        else interimText += event.results[i][0].transcript;
+      }
+      const base = recordBaseRef.current;
+      const sep = base && finalText + interimText ? " " : "";
+      if (textareaRef.current) {
+        textareaRef.current.value = base + sep + finalText + interimText;
+      }
+    };
+    recognition.onend = () => {
+      setRecording(false);
+      const base = recordBaseRef.current;
+      const sep = base && finalText ? " " : "";
+      if (textareaRef.current) textareaRef.current.value = base + sep + finalText;
+    };
+    recognition.onerror = () => setRecording(false);
+    recognitionRef.current = recognition;
+    recognition.start();
+  }
+
+  // 画面を離れるときは音声認識を止める
+  useEffect(() => () => recognitionRef.current?.stop(), []);
+
   function submit() {
     const text = textareaRef.current?.value.trim();
-    if (!text || busy) return;
+    if (!text || inputLocked) return;
     if (!hasCredentials()) {
       onNeedApiKey();
       return;
     }
-    sendMessage({ text });
+    sendMessage({ text }, { body: buildRequestBody() });
     if (textareaRef.current) textareaRef.current.value = "";
   }
 
@@ -149,6 +260,11 @@ export default function ChatPanel({
             const reflected = m.parts.some(
               (p) => p.type === "tool-updateResumeFields",
             );
+            // AIの改善提案（承認待ち／承認済み／却下）
+            const proposals = m.parts.filter(
+              (p) =>
+                isToolUIPart(p) && getToolName(p) === "proposeImprovement",
+            ) as ToolUIPart[];
 
             // ヒアリング開始メッセージを通知チップとして表示
             if (
@@ -161,33 +277,82 @@ export default function ChatPanel({
                   className="flex justify-center"
                 >
                   <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-3 py-1 text-xs font-medium text-emerald-700">
-                    求人分析に基づくヒアリングを開始しました
+                    {jobAnalysis && hasProfile
+                      ? "求人分析と経歴を踏まえたヒアリングを開始しました"
+                      : jobAnalysis
+                        ? "求人分析を踏まえた相談を開始しました"
+                        : hasProfile
+                          ? "経歴を踏まえたヒアリングを開始しました"
+                          : "相談を開始しました"}
                   </span>
                 </div>
               );
             }
 
-            if (!text && !reflected) return null;
+            const hasBubble = !!text || (reflected && m.role === "assistant");
+            if (!hasBubble && proposals.length === 0) return null;
+
             return (
-              <Message from={m.role} key={m.id}>
-                <MessageContent>
-                  {text && <MessageResponse>{text}</MessageResponse>}
-                  {reflected && m.role === "assistant" && (
-                    <p className="text-xs font-medium text-emerald-600">
-                      ✓ 書類に内容を反映しました
-                    </p>
-                  )}
-                </MessageContent>
-              </Message>
+              <div key={m.id} className="flex flex-col gap-2">
+                {hasBubble && (
+                  <Message from={m.role}>
+                    <MessageContent>
+                      {text && <MessageResponse>{text}</MessageResponse>}
+                      {reflected && m.role === "assistant" && (
+                        <p className="text-xs font-medium text-emerald-600">
+                          ✓ 書類に内容を反映しました
+                        </p>
+                      )}
+                    </MessageContent>
+                  </Message>
+                )}
+
+                {proposals.map((part) => {
+                  if (part.state === "input-streaming") {
+                    return (
+                      <div
+                        key={part.toolCallId}
+                        className="rounded-md border border-emerald-100 bg-emerald-50/50 px-3 py-2 text-xs text-emerald-600"
+                      >
+                        AIが改善案を作成中…
+                      </div>
+                    );
+                  }
+                  const suggestion = part.input as AdvisorSuggestion | undefined;
+                  if (!suggestion) return null;
+                  let suggestionState: SuggestionState = "pending";
+                  if (part.state === "output-available") {
+                    const out = part.output as { approved?: boolean } | undefined;
+                    suggestionState = out?.approved ? "approved" : "rejected";
+                  } else if (
+                    part.state === "output-error" ||
+                    part.state === "output-denied"
+                  ) {
+                    suggestionState = "rejected";
+                  }
+                  return (
+                    <SuggestionApproval
+                      key={part.toolCallId}
+                      suggestion={suggestion}
+                      state={suggestionState}
+                      onApprove={() =>
+                        approveSuggestion(part.toolCallId, suggestion)
+                      }
+                      onReject={() => rejectSuggestion(part.toolCallId)}
+                    />
+                  );
+                })}
+              </div>
             );
           })}
 
           {error && (
             <div className="rounded-md bg-red-50 px-3 py-2 text-xs text-red-600">
-              AIの応答に失敗しました。右上の「⚙️ APIキー設定」で、
-              <strong>APIキーが正しいか</strong>、
-              <strong>選んだモデルがそのキーで使えるか</strong>をご確認のうえ、
-              少し時間をおいて再送信してください。
+              <p className="font-medium">AIの応答に失敗しました。</p>
+              <p className="mt-0.5">
+                {error.message ||
+                  "APIキーと、選んだモデルがそのキーで使えるかをご確認のうえ、少し時間をおいて再送信してください。"}
+              </p>
             </div>
           )}
         </ConversationContent>
@@ -195,21 +360,48 @@ export default function ChatPanel({
       </Conversation>
 
       <div className="border-t border-border p-3 flex flex-col gap-2">
-        <textarea
-          ref={textareaRef}
-          placeholder="回答を入力（Enterで送信 / Shift+Enterで改行）"
-          disabled={busy}
-          onKeyDown={handleKeyDown}
-          className="w-full resize-none rounded-lg border border-input bg-transparent px-3 py-2 text-sm min-h-[72px] max-h-48 focus-visible:outline-none focus-visible:border-ring placeholder:text-muted-foreground disabled:opacity-50"
-        />
+        <div className="relative">
+          <textarea
+            ref={textareaRef}
+            placeholder={
+              recording
+                ? "話してください…"
+                : pendingApproval
+                  ? "上の改善案を承認または却下してから続けてください"
+                  : "回答を入力（Enterで送信 / Shift+Enterで改行）"
+            }
+            disabled={inputLocked}
+            onKeyDown={handleKeyDown}
+            className="w-full resize-none rounded-lg border border-input bg-transparent px-3 py-2 pr-10 text-sm min-h-[72px] max-h-48 focus-visible:outline-none focus-visible:border-ring placeholder:text-muted-foreground disabled:opacity-50"
+          />
+          <button
+            type="button"
+            onClick={toggleVoice}
+            disabled={inputLocked}
+            title={recording ? "音声入力を停止" : "音声入力を開始（日本語）"}
+            className={`absolute right-2 top-2 rounded p-1.5 transition-colors disabled:opacity-40 ${
+              recording
+                ? "animate-pulse text-red-500 hover:text-red-700"
+                : "text-slate-400 hover:text-slate-700"
+            }`}
+          >
+            {recording ? <MicOff className="size-4" /> : <Mic className="size-4" />}
+          </button>
+        </div>
         <div className="flex items-center justify-between">
           <span className="text-xs text-muted-foreground">
-            {busy ? "AIが応答中…" : "Shift+Enterで改行"}
+            {recording
+              ? "音声入力中… 氏名・住所などの個人情報は入れないでください"
+              : pendingApproval
+                ? "改善案の承認待ちです"
+                : busy
+                  ? "AIが応答中…"
+                  : "🎤で音声入力できます（経歴・経験向け）"}
           </span>
           <button
             type="button"
             onClick={submit}
-            disabled={busy}
+            disabled={inputLocked}
             className="rounded-md bg-slate-800 px-3 py-1.5 text-xs font-medium text-white hover:bg-slate-700 disabled:opacity-50"
           >
             送信
