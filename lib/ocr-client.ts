@@ -15,20 +15,63 @@ export interface OcrFile {
   mediaType: string;
 }
 
-/** Blob（File やクリップボード画像）を、APIに送る形式（base64 + MIMEタイプ）へ変換する。 */
-export function blobToOcrFile(blob: Blob, fallbackType = "image/png"): Promise<OcrFile> {
+// 本番（Vercel）には送信データ量の上限があるため、大きな画像は送る前に縮小・圧縮する。
+// スマホ写真（数MB）でも確実に送れるようにしつつ、文字が読める品質は保つ。
+const MAX_DIMENSION = 2000; // 長辺の最大ピクセル
+const PASSTHROUGH_MAX_BYTES = 1_500_000; // これ以下かつ小さい画像はそのまま使う（再エンコードで劣化させない）
+const JPEG_QUALITY = 0.85;
+
+/** 大きい画像だけ縮小＋JPEG化する。小さい画像や、処理に失敗した場合はそのまま返す。 */
+async function compressImageForOcr(blob: Blob): Promise<Blob> {
+  try {
+    if (typeof createImageBitmap !== "function") return blob;
+    const bitmap = await createImageBitmap(blob);
+    const longest = Math.max(bitmap.width, bitmap.height);
+    const needsResize = longest > MAX_DIMENSION;
+    if (!needsResize && blob.size <= PASSTHROUGH_MAX_BYTES) {
+      bitmap.close();
+      return blob; // 十分小さいのでそのまま
+    }
+    const scale = needsResize ? MAX_DIMENSION / longest : 1;
+    const w = Math.max(1, Math.round(bitmap.width * scale));
+    const h = Math.max(1, Math.round(bitmap.height * scale));
+    const canvas = document.createElement("canvas");
+    canvas.width = w;
+    canvas.height = h;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) {
+      bitmap.close();
+      return blob;
+    }
+    ctx.drawImage(bitmap, 0, 0, w, h);
+    bitmap.close();
+    const out = await new Promise<Blob | null>((resolve) =>
+      canvas.toBlob((b) => resolve(b), "image/jpeg", JPEG_QUALITY),
+    );
+    return out ?? blob;
+  } catch {
+    return blob; // 失敗時は元の画像で送る
+  }
+}
+
+function readAsDataUrl(blob: Blob): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
-    reader.onload = () => {
-      const result = String(reader.result);
-      const comma = result.indexOf(",");
-      // "data:image/png;base64,XXXX" の "XXXX" 部分だけを取り出す
-      const data = comma >= 0 ? result.slice(comma + 1) : result;
-      resolve({ data, mediaType: blob.type || fallbackType });
-    };
+    reader.onload = () => resolve(String(reader.result));
     reader.onerror = () => reject(new Error("画像の読み込みに失敗しました。"));
     reader.readAsDataURL(blob);
   });
+}
+
+/** Blob（File やクリップボード画像）を、APIに送る形式（base64 + MIMEタイプ）へ変換する。
+ *  大きい画像は自動で縮小・圧縮してから変換する。 */
+export async function blobToOcrFile(blob: Blob, fallbackType = "image/png"): Promise<OcrFile> {
+  const prepared = await compressImageForOcr(blob);
+  const dataUrl = await readAsDataUrl(prepared);
+  const comma = dataUrl.indexOf(",");
+  // "data:image/jpeg;base64,XXXX" の "XXXX" 部分だけを取り出す
+  const data = comma >= 0 ? dataUrl.slice(comma + 1) : dataUrl;
+  return { data, mediaType: prepared.type || fallbackType };
 }
 
 /** ブラウザの File を、APIに送る形式へ変換する。 */
