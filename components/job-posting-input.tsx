@@ -10,6 +10,7 @@ interface JobPostingInputProps {
   onAnalysis: (analysis: JobAnalysis) => void;
   onResetAnalysis: () => void;
   onNeedApiKey: () => void;
+  onStartAdvisor: () => void;
   analysis: JobAnalysis | null;
 }
 
@@ -22,6 +23,7 @@ export default function JobPostingInput({
   onAnalysis,
   onResetAnalysis,
   onNeedApiKey,
+  onStartAdvisor,
   analysis,
 }: JobPostingInputProps) {
   // 一番の機能なので、初期状態から開いて見せる
@@ -309,10 +311,19 @@ export default function JobPostingInput({
                 </ol>
               </div>
 
-              {/* ヒアリングは「②履歴書作成」のボタンから、経歴と照合して開始する */}
-              <p className="rounded-md bg-emerald-50 px-3 py-2 text-xs text-emerald-700">
-                この分析結果は、下の「②履歴書作成」の<strong>「求人分析内容と応募者の経歴を踏まえたAIのヒアリングを開始する」</strong>ボタンで、あなたの履歴書と照合して使われます。
-              </p>
+              {/* この求人だけで相談を始める（履歴書なしでOK） */}
+              <div className="space-y-1 border-t border-slate-200 pt-3">
+                <button
+                  type="button"
+                  onClick={onStartAdvisor}
+                  className="flex w-full items-center justify-center gap-1.5 rounded-md bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700"
+                >
+                  この求人について相談を始める（履歴書を読み込ませたくない場合はこちら）
+                </button>
+                <p className="text-center text-xs text-slate-500">
+                  ※ 履歴書（経歴）をAIに送りたくない方向けの入口です。<strong>経歴も踏まえた深いヒアリング</strong>を受けたい方は、このボタンではなく、下の「②履歴書作成」の「求人分析内容と応募者の経歴を踏まえたAIのヒアリングを開始する」ボタンを押してください。
+                </p>
+              </div>
             </div>
           )}
         </div>

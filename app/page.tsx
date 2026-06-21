@@ -184,6 +184,7 @@ export default function Home() {
                 onAnalysis={(a) => setJobAnalysis(a)}
                 onResetAnalysis={() => { setJobAnalysis(null); setJobPosting(""); }}
                 onNeedApiKey={() => setApiKeyOpen(true)}
+                onStartAdvisor={() => setHiringTrigger((t) => t + 1)}
                 analysis={jobAnalysis}
               />
             <ResumeInputMethods
