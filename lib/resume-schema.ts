@@ -229,8 +229,8 @@ export function mergeUpdate(current: ResumeData, update: ResumeUpdate): ResumeDa
 }
 
 // 画像OCRで読み取る対象のスキーマ。
-// プライバシー保護のため、読み取るのは「学歴・職歴・職務経歴」のキャリア情報のみ。
-// 氏名・住所・生年月日・電話・メール・顔写真などの個人情報は対象に含めない。
+// プライバシー保護のため、読み取るのは「個人情報を除いたキャリア情報」のみ。
+// 氏名・ふりがな・住所・生年月日・電話・メール・顔写真などの個人情報は対象に含めない。
 export const ocrExtractionSchema = z.object({
   education: z
     .array(
@@ -250,6 +250,15 @@ export const ocrExtractionSchema = z.object({
       }),
     )
     .describe("履歴書の職歴欄。画像から読み取れた全件。なければ空配列"),
+  licenses: z
+    .array(
+      z.object({
+        year: z.string().describe("取得の西暦4桁。読み取れなければ空文字"),
+        month: z.string().describe("月（数字のみ）。読み取れなければ空文字"),
+        name: z.string().describe("免許・資格名"),
+      }),
+    )
+    .describe("免許・資格。画像から読み取れた全件。なければ空配列"),
   careers: z
     .array(
       z.object({
@@ -260,17 +269,30 @@ export const ocrExtractionSchema = z.object({
       }),
     )
     .describe("職務経歴書の詳細な職務経歴。画像から読み取れた全件。なければ空配列"),
+  careerSummary: z
+    .string()
+    .describe("職務要約。画像に書かれている文章をそのまま書き起こす。なければ空文字"),
+  skills: z
+    .string()
+    .describe("活かせる経験・知識・スキル。画像の記載をそのまま。なければ空文字"),
+  selfPR: z
+    .string()
+    .describe("自己PR。画像に書かれている文章をそのまま書き起こす。なければ空文字"),
+  motivation: z
+    .string()
+    .describe("志望動機。画像に書かれている文章をそのまま書き起こす。なければ空文字"),
 });
 
 export type OcrExtraction = z.infer<typeof ocrExtractionSchema>;
 
-// OCRで読み取った（本人が確認・修正済みの）内容を、既存の履歴書データに「追記」する。
-// 既存の学歴・職歴・職務経歴は消さずに後ろへ足す。
+// OCRで読み取った（本人が確認・修正済みの）内容を、既存の履歴書データに反映する。
+// 配列項目（学歴・職歴・免許資格・職務経歴）は消さずに後ろへ追記し、
+// 文章項目（職務要約・スキル・自己PR・志望動機）は読み取りがあれば上書きする。
 export function appendOcrExtraction(
   current: ResumeData,
   ocr: OcrExtraction,
 ): ResumeData {
-  return {
+  const next: ResumeData = {
     ...current,
     education: [
       ...current.education,
@@ -280,11 +302,20 @@ export function appendOcrExtraction(
       ...current.workHistory,
       ...ocr.workHistory.map((w) => ({ id: uid(), ...w })),
     ],
+    licenses: [
+      ...current.licenses,
+      ...ocr.licenses.map((l) => ({ id: uid(), ...l })),
+    ],
     careers: [
       ...current.careers,
       ...ocr.careers.map((c) => ({ id: uid(), ...c })),
     ],
   };
+  if (ocr.careerSummary.trim()) next.careerSummary = ocr.careerSummary;
+  if (ocr.skills.trim()) next.skills = ocr.skills;
+  if (ocr.selfPR.trim()) next.selfPR = ocr.selfPR;
+  if (ocr.motivation.trim()) next.motivation = ocr.motivation;
+  return next;
 }
 
 export function newId(): string {

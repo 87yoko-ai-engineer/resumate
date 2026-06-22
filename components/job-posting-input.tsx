@@ -10,7 +10,7 @@ interface JobPostingInputProps {
   onAnalysis: (analysis: JobAnalysis) => void;
   onResetAnalysis: () => void;
   onNeedApiKey: () => void;
-  onStartAdvisor: () => void;
+  onStartJobConsult: () => void;
   analysis: JobAnalysis | null;
 }
 
@@ -23,7 +23,7 @@ export default function JobPostingInput({
   onAnalysis,
   onResetAnalysis,
   onNeedApiKey,
-  onStartAdvisor,
+  onStartJobConsult,
   analysis,
 }: JobPostingInputProps) {
   // 一番の機能なので、初期状態から開いて見せる
@@ -315,7 +315,7 @@ export default function JobPostingInput({
               <div className="space-y-1 border-t border-slate-200 pt-3">
                 <button
                   type="button"
-                  onClick={onStartAdvisor}
+                  onClick={onStartJobConsult}
                   className="flex w-full items-center justify-center gap-1.5 rounded-md bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700"
                 >
                   この求人について相談を始める（履歴書を読み込ませたくない場合はこちら）

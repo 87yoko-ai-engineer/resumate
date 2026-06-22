@@ -50,6 +50,7 @@ interface ChatPanelProps {
   jobPosting: string;
   jobAnalysis: JobAnalysis | null;
   hiringTrigger: number;
+  jobConsultTrigger: number;
   onNeedApiKey: () => void;
 }
 
@@ -59,10 +60,12 @@ export default function ChatPanel({
   jobPosting,
   jobAnalysis,
   hiringTrigger,
+  jobConsultTrigger,
   onNeedApiKey,
 }: ChatPanelProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const prevTriggerRef = useRef(0);
+  const prevConsultRef = useRef(0);
 
   // チャット欄の音声入力（ブラウザの Web Speech API。Chrome等では音声が認識サービスに送られる）
   const [recording, setRecording] = useState(false);
@@ -129,6 +132,21 @@ export default function ChatPanel({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hiringTrigger, sendMessage, onNeedApiKey, jobPosting, jobAnalysis, resume]);
+
+  // 「求人だけで相談」開始トリガー（履歴書＝applicantProfileは絶対に送らない）
+  useEffect(() => {
+    if (jobConsultTrigger > 0 && jobConsultTrigger !== prevConsultRef.current) {
+      prevConsultRef.current = jobConsultTrigger;
+      if (!hasCredentials()) {
+        onNeedApiKey();
+        return;
+      }
+      sendMessage(
+        { text: "[__HIRING_START_JOBONLY__] 求人情報だけをもとに相談を始めてください。" },
+        { body: { jobPosting, jobAnalysis, applicantProfile: "" } },
+      );
+    }
+  }, [jobConsultTrigger, sendMessage, onNeedApiKey, jobPosting, jobAnalysis]);
 
   const busy = status === "submitted" || status === "streaming";
 
@@ -267,23 +285,21 @@ export default function ChatPanel({
             ) as ToolUIPart[];
 
             // ヒアリング開始メッセージを通知チップとして表示
-            if (
-              m.role === "user" &&
-              text.startsWith("[__HIRING_START__]")
-            ) {
+            if (m.role === "user" && text.startsWith("[__HIRING_START")) {
+              const jobOnly = text.startsWith("[__HIRING_START_JOBONLY__]");
+              const chipLabel = jobOnly
+                ? "求人分析を踏まえた相談を開始しました（履歴書は送っていません）"
+                : jobAnalysis && hasProfile
+                  ? "求人分析と経歴を踏まえたヒアリングを開始しました"
+                  : jobAnalysis
+                    ? "求人分析を踏まえた相談を開始しました"
+                    : hasProfile
+                      ? "経歴を踏まえたヒアリングを開始しました"
+                      : "相談を開始しました";
               return (
-                <div
-                  key={m.id}
-                  className="flex justify-center"
-                >
+                <div key={m.id} className="flex justify-center">
                   <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-3 py-1 text-xs font-medium text-emerald-700">
-                    {jobAnalysis && hasProfile
-                      ? "求人分析と経歴を踏まえたヒアリングを開始しました"
-                      : jobAnalysis
-                        ? "求人分析を踏まえた相談を開始しました"
-                        : hasProfile
-                          ? "経歴を踏まえたヒアリングを開始しました"
-                          : "相談を開始しました"}
+                    {chipLabel}
                   </span>
                 </div>
               );
