@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<title>履歴書サンプル（架空・山田拓海）</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: #ffffff;
+    color: #111;
+    font-family: "Yu Gothic", "Hiragino Kaku Gothic ProN", "Meiryo", sans-serif;
+    font-size: 13px;
+    line-height: 1.6;
+  }
+  .page { width: 820px; margin: 0 auto; padding: 28px 34px; background: #fff; }
+  .page + .page { page-break-before: always; }
+  h1 { font-size: 24px; letter-spacing: 0.4em; text-align: center; margin: 0 0 4px; }
+  .meta { text-align: right; font-size: 12px; color: #333; margin-bottom: 10px; }
+  .note { text-align: center; color: #999; font-size: 11px; margin: 0 0 16px; }
+  table { width: 100%; border-collapse: collapse; }
+  th, td { border: 1px solid #555; padding: 6px 9px; vertical-align: top; text-align: left; }
+  th { background: #f2f2f2; font-weight: 600; white-space: nowrap; }
+  .basic th { width: 110px; }
+  .ym { width: 90px; white-space: nowrap; text-align: center; }
+  .photo {
+    width: 110px; height: 140px; border: 1px solid #888; float: right;
+    display: flex; align-items: center; justify-content: center;
+    color: #aaa; font-size: 11px; text-align: center; margin-left: 12px;
+  }
+  .sec-title {
+    font-size: 15px; font-weight: 700; margin: 18px 0 6px;
+    border-left: 5px solid #444; padding-left: 8px; background: #f7f7f7;
+    padding-top: 4px; padding-bottom: 4px;
+  }
+  .block { border: 1px solid #555; padding: 9px 11px; margin-bottom: 10px; }
+  .block .head { font-weight: 700; }
+  .block .sub { color: #444; margin-bottom: 4px; }
+  p { margin: 4px 0; }
+  .body-text { border: 1px solid #555; padding: 9px 11px; white-space: pre-wrap; }
+</style>
+</head>
+<body>
+
+  <!-- 1ページ目：履歴書 -->
+  <div class="page">
+    <h1>履　歴　書</h1>
+    <p class="meta">2026年6月22日 現在</p>
+    <p class="note">※ これはテスト用の架空データです（実在しません）</p>
+
+    <div class="photo">写真</div>
+    <table class="basic">
+      <tr><th>ふりがな</th><td>やまだ たくみ</td></tr>
+      <tr><th>氏名</th><td style="font-size:16px;font-weight:700;">山田 拓海</td></tr>
+      <tr><th>生年月日</th><td>1992年8月3日（満33歳）　男</td></tr>
+      <tr><th>住所</th><td>〒141-0001　東京都品川区北品川0-0-0 サンプルレジデンス000</td></tr>
+      <tr><th>電話</th><td>080-0000-0000</td></tr>
+      <tr><th>メール</th><td>takumi.yamada.sample@example.com</td></tr>
+    </table>
+
+    <div class="sec-title">学歴・職歴</div>
+    <table>
+      <tr><th class="ym">年</th><th class="ym">月</th><th>学歴・職歴</th></tr>
+      <tr><td class="ym"></td><td class="ym"></td><td style="text-align:center;font-weight:600;">学歴</td></tr>
+      <tr><td class="ym">2011</td><td class="ym">3</td><td>神奈川県立みなと高等学校 普通科 卒業</td></tr>
+      <tr><td class="ym">2011</td><td class="ym">4</td><td>青葉商科大学 商学部 会計学科 入学</td></tr>
+      <tr><td class="ym">2015</td><td class="ym">3</td><td>青葉商科大学 商学部 会計学科 卒業</td></tr>
+      <tr><td class="ym"></td><td class="ym"></td><td style="text-align:center;font-weight:600;">職歴</td></tr>
+      <tr><td class="ym">2015</td><td class="ym">4</td><td>株式会社サンプル製作所 入社（管理本部 経理部）</td></tr>
+      <tr><td class="ym">2020</td><td class="ym">4</td><td>同社 経理課 主任に昇格（決算業務に加え経理の業務自動化を担当）</td></tr>
+      <tr><td class="ym">2024</td><td class="ym">5</td><td>株式会社サンプル製作所 一身上の都合により退職</td></tr>
+      <tr><td class="ym">2024</td><td class="ym">6</td><td>合同会社サンプルテック 入社（管理部／経理・内製開発担当）</td></tr>
+      <tr><td class="ym"></td><td class="ym"></td><td style="text-align:right;">現在に至る</td></tr>
+    </table>
+
+    <div class="sec-title">免許・資格</div>
+    <table>
+      <tr><th class="ym">年</th><th class="ym">月</th><th>免許・資格</th></tr>
+      <tr><td class="ym">2014</td><td class="ym">11</td><td>日商簿記検定2級 取得</td></tr>
+      <tr><td class="ym">2016</td><td class="ym">3</td><td>普通自動車第一種運転免許 取得</td></tr>
+      <tr><td class="ym">2018</td><td class="ym">10</td><td>基本情報技術者試験 合格</td></tr>
+      <tr><td class="ym">2022</td><td class="ym">6</td><td>TOEIC L&R 760点 取得</td></tr>
+    </table>
+  </div>
+
+  <!-- 2ページ目：職務経歴書 -->
+  <div class="page">
+    <h1 style="letter-spacing:0.2em;">職 務 経 歴 書</h1>
+    <p class="meta">山田 拓海</p>
+
+    <div class="sec-title">職務要約</div>
+    <div class="body-text">経理実務とプログラミング／AI活用の両方を実務で担ってきました。事業会社の経理部で月次・年次決算や税務対応に約9年従事する一方、PythonやRPAで請求書処理を自動化し月次処理工数を約50%削減。現職ではClaude等のLLM APIを用いた社内ツールを内製し、経理と開発をつなぐDX推進を担当しています。</div>
+
+    <div class="sec-title">職務経歴</div>
+    <div class="block">
+      <div class="head">株式会社サンプル製作所（2015年4月〜2024年5月）</div>
+      <div class="sub">管理本部 経理部 → 経理課 主任</div>
+      <p>月次・年次決算、経費精算、税務対応補助を担当。PythonとRPAで請求書処理を自動化し、月次処理工数を約50%削減。Excel／GASで申請チェックを仕組み化し、差し戻しを半減。後半は経理課主任として後輩2名の育成も担当した。</p>
+    </div>
+    <div class="block">
+      <div class="head">合同会社サンプルテック（2024年6月〜現在）</div>
+      <div class="sub">管理部（経理・内製開発）</div>
+      <p>経理実務に加え、Claude等のLLM APIを用いた社内問い合わせFAQボットと議事録要約ツールを内製。経理と開発の橋渡し役として、管理部門のDXを推進している。</p>
+    </div>
+
+    <div class="sec-title">活かせるスキル</div>
+    <div class="body-text">経理実務（月次・年次決算、買掛・売掛、経費精算、税理士対応の窓口）／Python（業務自動化・データ集計）／JavaScript・Google Apps Script／RPA（請求書処理自動化）／LLM API活用（Claude・ChatGPT：FAQボット・文書要約の内製）／Excel（VLOOKUP・ピボット・関数）／会計ソフト（freee・弥生会計）／ビジネス英語（TOEIC 760）</div>
+
+    <div class="sec-title">自己PR</div>
+    <div class="body-text">私の強みは、経理の正確さと、業務を自分の手で改善・自動化していく実行力です。前職では経費精算や請求書処理でミスや手戻りが多い工程に着目し、PythonとRPAで処理を自動化、Excel／GASで申請チェックを仕組み化して差し戻しを半減させました。さらに独学で基本情報技術者を取得し、LLM APIを使った問い合わせFAQボットや議事録要約ツールを内製。数字を扱う現場の課題を理解したうえで、技術で解ける形に落とし込めることが持ち味です。</div>
+
+    <div class="sec-title">志望動機</div>
+    <div class="body-text">管理部門の業務を深く理解しながらAIで業務変革を進める貴社のポジションに強く惹かれ応募しました。経理実務で培った現場感覚と、Python・LLM APIによる自動化・内製開発の経験は、「経理もわかるエンジニア／AIも使える経理パーソン」という求める人物像に合致すると考えています。現場と技術の橋渡し役として、管理業務のDXに貢献したいです。</div>
+  </div>
+
+</body>
+</html>

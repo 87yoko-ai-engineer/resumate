@@ -103,7 +103,7 @@ export async function POST(req: Request) {
     imageParts.push({ type: "image", image: f.data, mediaType: f.mediaType });
   }
 
-  // 5. 利用者自身のAIへ画像を送り、学歴・職歴・職務経歴だけを構造化して受け取る。
+  // 5. 利用者自身のAIへ画像を送り、個人情報を除いたキャリア情報を構造化して受け取る。
   try {
     const { object } = await generateObject({
       model: resolved.model,
@@ -115,7 +115,7 @@ export async function POST(req: Request) {
           content: [
             {
               type: "text",
-              text: "添付の画像（過去の履歴書・職務経歴書）から、学歴・職歴・職務経歴だけを読み取り、指定のJSON構造で返してください。氏名・住所・生年月日などの個人情報は無視して、出力に含めないでください。",
+              text: "添付の画像（過去の履歴書・職務経歴書）から、氏名・住所などの個人情報を除いたキャリア情報（学歴・職歴・免許資格・職務経歴・職務要約・スキル・自己PR・志望動機）を読み取り、指定のJSON構造で返してください。氏名・住所・生年月日・電話・メールなどの個人情報は無視して、出力に含めないでください。",
             },
             ...imageParts,
           ],

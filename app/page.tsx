@@ -29,6 +29,9 @@ export default function Home() {
   const [jobPosting, setJobPosting] = useState("");
   const [jobAnalysis, setJobAnalysis] = useState<JobAnalysis | null>(null);
   const [hiringTrigger, setHiringTrigger] = useState(0);
+  const [jobConsultTrigger, setJobConsultTrigger] = useState(0);
+  // 初期化時にこの値を変えてChatPanelを作り直し、会話をリセットする
+  const [chatKey, setChatKey] = useState(0);
   const [docType, setDocType] = useState<DocType>("resume");
   const [brushupField, setBrushupField] = useState<BrushupField | null>(null);
   const [loaded, setLoaded] = useState(false);
@@ -87,6 +90,11 @@ export default function Home() {
     setJobPosting("");
     setJobAnalysis(null);
     clearState();
+    // チャットの会話もリセット（ヒアリングのトリガーを0に戻し、ChatPanelを作り直す）
+    setHiringTrigger(0);
+    setJobConsultTrigger(0);
+    setChatKey((k) => k + 1);
+    setDirectFormOpen(false);
   }
 
   function openDirectForm() {
@@ -165,11 +173,13 @@ export default function Home() {
         {/* 左: チャット */}
         <div className="flex w-[380px] shrink-0 flex-col border-r border-slate-200 bg-white print:hidden">
            <ChatPanel
+               key={chatKey}
                onResumeUpdate={handleResumeUpdate}
                resume={resume}
                jobPosting={jobPosting}
                jobAnalysis={jobAnalysis}
                hiringTrigger={hiringTrigger}
+               jobConsultTrigger={jobConsultTrigger}
                onNeedApiKey={() => setApiKeyOpen(true)}
             />
         </div>
@@ -184,7 +194,7 @@ export default function Home() {
                 onAnalysis={(a) => setJobAnalysis(a)}
                 onResetAnalysis={() => { setJobAnalysis(null); setJobPosting(""); }}
                 onNeedApiKey={() => setApiKeyOpen(true)}
-                onStartAdvisor={() => setHiringTrigger((t) => t + 1)}
+                onStartJobConsult={() => setJobConsultTrigger((t) => t + 1)}
                 analysis={jobAnalysis}
               />
             <ResumeInputMethods

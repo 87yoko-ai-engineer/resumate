@@ -158,7 +158,7 @@ export default function ResumeInputMethods({
         <InputMethodCard
           icon={<FileUp className="size-5" />}
           title="履歴書・職務経歴書を読み取り"
-          description="スクリーンショットを貼り付けるか、スマホで撮影して、学歴・職歴・職務経歴だけをAIが読み取ります。読み取った内容は、反映前にご自身で確認・修正できます。"
+          description="スクリーンショットを貼り付けるか、スマホで撮影して、氏名・住所などの個人情報を除いたキャリア情報（学歴・職歴・資格・職務経歴・職務要約・スキル・自己PR・志望動機）をAIが読み取ります。読み取った内容は、反映前にご自身で確認・修正できます。"
           notice="氏名・住所・生年月日・電話・メールなどの個人情報が映らないようにしてください（必要な部分だけを写す／紙などで隠す）。画像はあなたご自身のAIに送られます。"
           actionLabel={ocrBusy ? "読み取り中…" : "スクリーンショットを貼り付け"}
           onAction={pasteFromClipboard}
